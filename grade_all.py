@@ -1,0 +1,89 @@
+"""
+grade_all.py - grades every saved AI reply and saves the scores.
+
+Reads:   generated/<model>/<task_id>_<language>.py
+Tests:   tests/<task_id>.py
+Saves:   results/results.csv
+"""
+
+import os
+
+import pandas as pd
+
+from grade import grade
+
+GENERATED_FOLDER = "generated"
+TESTS_FOLDER = "tests"
+RESULTS_FILE = "results/results.csv"
+LANGUAGE_ORDER = ["english", "hinglish", "benglish"]   # order for the summary
+
+rows = []
+missing_tests = set()
+
+# Each sub-folder of generated/ is one model (for example generated/gemini)
+models = sorted(
+    name for name in os.listdir(GENERATED_FOLDER)
+    if os.path.isdir(os.path.join(GENERATED_FOLDER, name))
+)
+
+for model in models:
+    model_folder = os.path.join(GENERATED_FOLDER, model)
+    files = sorted(f for f in os.listdir(model_folder) if f.endswith(".py"))
+    print(f"\n=== {model}: {len(files)} files ===")
+
+    for file_name in files:
+        # "task01_hinglish.py" -> task_id "task01", language "hinglish"
+        name_without_py = file_name[:-3]
+        if "_" not in name_without_py:
+            print(f"{file_name}: name isn't <task_id>_<language>.py, skipping")
+            continue
+        task_id, language = name_without_py.split("_", 1)
+
+        test_file = os.path.join(TESTS_FOLDER, f"{task_id}.py")
+        if not os.path.exists(test_file):
+            missing_tests.add(task_id)
+            print(f"{file_name}: no {test_file} yet, skipping")
+            continue
+
+        with open(os.path.join(model_folder, file_name), encoding="utf-8") as f:
+            code_text = f.read()
+
+        passed, total, error = grade(code_text, test_file)
+        passed_all = total > 0 and passed == total
+
+        status = "PASS" if passed_all else "FAIL"
+        print(f"{file_name}: {passed}/{total} {status}" + (f"  ({error})" if error else ""))
+
+        rows.append({
+            "model": model,
+            "task_id": task_id,
+            "language": language,
+            "passed_cases": passed,
+            "total_cases": total,
+            "passed_all": passed_all,
+            "error": error or "",
+        })
+
+# Save the results table
+os.makedirs(os.path.dirname(RESULTS_FILE), exist_ok=True)
+results = pd.DataFrame(rows, columns=[
+    "model", "task_id", "language", "passed_cases", "total_cases", "passed_all", "error"
+])
+results.to_csv(RESULTS_FILE, index=False, encoding="utf-8")
+print(f"\nSaved {len(results)} rows to {RESULTS_FILE}")
+
+if missing_tests:
+    print(f"Skipped tasks with no test file yet: {', '.join(sorted(missing_tests))}")
+
+# Pass rate = share of tasks where the code passed ALL test cases
+print("\n=== Pass rate by language ===")
+for model in results["model"].unique():
+    print(f"{model}:")
+    model_rows = results[results["model"] == model]
+    languages = [l for l in LANGUAGE_ORDER if l in model_rows["language"].values]
+    languages += sorted(set(model_rows["language"]) - set(LANGUAGE_ORDER))
+    for language in languages:
+        lang_rows = model_rows[model_rows["language"] == language]
+        fully_passed = int(lang_rows["passed_all"].sum())
+        count = len(lang_rows)
+        print(f"  {language:<10} {fully_passed}/{count} tasks passed  ({100 * fully_passed / count:.1f}%)")
