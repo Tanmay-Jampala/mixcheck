@@ -1,29 +1,69 @@
 """
-run_all.py - sends every prompt in prompts/tasks.csv to Gemini and saves the replies.
+run_all.py - sends every prompt in prompts/tasks.csv to an AI model and saves the replies.
 
-Saves each reply to: generated/gemini/<task_id>_<language>.py
+Usage:
+    python run_all.py --model gemini
+    python run_all.py --model groq
+
+Saves each reply to: generated/<model>/<task_id>_<language>.py
 Files that already exist are skipped, so you can stop (Ctrl + C) and
 re-run at any time without wasting free quota.
 """
 
+import argparse
 import os
 import time
 
 import pandas as pd
 from dotenv import load_dotenv
-from google import genai
 
-load_dotenv()                 # reads your keys from .env
-client = genai.Client()       # uses GEMINI_API_KEY automatically
-
-MODEL = "gemini-flash-lite-latest"
+# ---- Settings ----
+MODEL_IDS = {
+    "gemini": "gemini-flash-lite-latest",
+    "groq": "openai/gpt-oss-120b",
+}
 TASKS_FILE = "prompts/tasks.csv"
-OUTPUT_FOLDER = "generated/gemini"
 LANGUAGES = ["english", "hinglish", "benglish"]
 WAIT_SECONDS = 6              # pause after each request (free-tier rate limits)
 
-# Read the sheet. dtype=str keeps everything as text;
-# keep_default_na=False turns empty cells into "" instead of NaN.
+
+# ---- Read the --model option from the command line ----
+parser = argparse.ArgumentParser(description="Send MixCheck prompts to an AI model.")
+parser.add_argument("--model", choices=list(MODEL_IDS), default="gemini",
+                    help="which model to use (default: gemini)")
+args = parser.parse_args()
+model = args.model
+model_id = MODEL_IDS[model]
+
+load_dotenv()                 # reads your keys from .env
+
+
+# ---- One "ask" function per model. Both take a prompt and return the reply text ----
+if model == "gemini":
+    from google import genai
+    gemini_client = genai.Client()          # uses GEMINI_API_KEY automatically
+
+    def ask(prompt):
+        response = gemini_client.models.generate_content(
+            model=model_id, contents=prompt, config={"temperature": 0}
+        )
+        return response.text
+
+elif model == "groq":
+    from groq import Groq
+    groq_client = Groq()                    # uses GROQ_API_KEY automatically
+
+    def ask(prompt):
+        response = groq_client.chat.completions.create(
+            model=model_id,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+        )
+        return response.choices[0].message.content
+
+
+# ---- Read the sheet ----
+# dtype=str keeps everything as text; keep_default_na=False turns empty cells into "".
 tasks = pd.read_csv(TASKS_FILE, dtype=str, keep_default_na=False, encoding="utf-8-sig")
 
 # Only use language columns that actually exist in the sheet
@@ -32,12 +72,14 @@ for lang in LANGUAGES:
     if lang not in languages:
         print(f"Warning: no '{lang}' column in {TASKS_FILE}, skipping that language")
 
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+output_folder = os.path.join("generated", model)
+os.makedirs(output_folder, exist_ok=True)
 
 total_jobs = len(tasks) * len(languages)
 job_number = 0
 saved = skipped = failed = 0
 
+print(f"Model: {model} ({model_id})")
 print(f"{len(tasks)} tasks x {len(languages)} languages = {total_jobs} prompts\n")
 
 for _, row in tasks.iterrows():
@@ -46,7 +88,7 @@ for _, row in tasks.iterrows():
     for language in languages:
         job_number += 1
         label = f"[{job_number}/{total_jobs}] {task_id} {language}"
-        output_path = os.path.join(OUTPUT_FOLDER, f"{task_id}_{language}.py")
+        output_path = os.path.join(output_folder, f"{task_id}_{language}.py")
         prompt = row[language].strip()
 
         if os.path.exists(output_path):
@@ -59,16 +101,14 @@ for _, row in tasks.iterrows():
             skipped += 1
             continue
 
-        print(f"{label}: asking Gemini...", end=" ", flush=True)
+        print(f"{label}: asking {model}...", end=" ", flush=True)
         try:
-            response = client.models.generate_content(
-                model=MODEL, contents=prompt, config={"temperature": 0}
-            )
-            if not response.text:
-                raise ValueError("Gemini sent back an empty reply")
+            reply = ask(prompt)
+            if not reply:
+                raise ValueError("the model sent back an empty reply")
 
             with open(output_path, "w", encoding="utf-8") as f:
-                f.write(response.text)
+                f.write(reply)
             print("saved")
             saved += 1
         except Exception as e:
