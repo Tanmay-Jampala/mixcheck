@@ -4,6 +4,7 @@ run_all.py - sends every prompt in prompts/tasks.csv to an AI model and saves th
 Usage:
     python run_all.py --model gemini
     python run_all.py --model groq
+    python run_all.py --model groq-small
 
 Saves each reply to: generated/<model>/<task_id>_<language>.py
 Files that already exist are skipped, so you can stop (Ctrl + C) and
@@ -21,9 +22,22 @@ from dotenv import load_dotenv
 MODEL_IDS = {
     "gemini": "gemini-flash-lite-latest",
     "groq": "openai/gpt-oss-120b",
+    "groq-small": "auto",     # picks the first small model below that Groq offers
 }
+# Small, cheap models to try for "groq-small", in order of preference
+SMALL_GROQ_CANDIDATES = [
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-20b",
+    "gemma2-9b-it",
+    "llama-3.2-3b-preview",
+]
 TASKS_FILE = "prompts/tasks.csv"
-LANGUAGES = ["english", "hinglish", "benglish"]
+# Every prompt style we test. Columns missing from the sheet are skipped.
+LANGUAGES = [
+    "english", "hinglish", "benglish",                        # clean, formal versions
+    "english_casual", "hinglish_casual", "benglish_casual",   # how people really type
+    "hinglish_devanagari",                                    # Hinglish in Hindi script
+]
 WAIT_SECONDS = 6              # pause after each request (free-tier rate limits)
 
 
@@ -49,9 +63,18 @@ if model == "gemini":
         )
         return response.text
 
-elif model == "groq":
+elif model in ("groq", "groq-small"):
     from groq import Groq
     groq_client = Groq()                    # uses GROQ_API_KEY automatically
+
+    if model_id == "auto":
+        # Ask Groq which models exist right now, then take the first small one
+        available = {m.id for m in groq_client.models.list().data}
+        model_id = next((m for m in SMALL_GROQ_CANDIDATES if m in available), None)
+        if model_id is None:
+            print("None of the small models are available on Groq right now.")
+            print("Available models:", ", ".join(sorted(available)))
+            raise SystemExit(1)
 
     def ask(prompt):
         response = groq_client.chat.completions.create(
@@ -74,6 +97,9 @@ for lang in LANGUAGES:
 
 output_folder = os.path.join("generated", model)
 os.makedirs(output_folder, exist_ok=True)
+# Remember exactly which model made these files (useful for the pitch and the judges)
+with open(os.path.join(output_folder, "model_id.txt"), "w", encoding="utf-8") as f:
+    f.write(model_id + "\n")
 
 total_jobs = len(tasks) * len(languages)
 job_number = 0
@@ -112,9 +138,17 @@ for _, row in tasks.iterrows():
             print("saved")
             saved += 1
         except Exception as e:
-            # Don't save anything, so this one is retried on the next run
-            print(f"FAILED ({type(e).__name__}: {str(e)[:150]})")
-            failed += 1
+            if "tool_use_failed" in str(e):
+                # The model tried to call a tool instead of answering. Retrying gives the
+                # same result every time, so we record it as a failed answer.
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write("# MODEL ERROR: the model tried to call a tool instead of writing code\n")
+                print("model broke the format (recorded as a fail)")
+                saved += 1
+            else:
+                # Don't save anything, so this one is retried on the next run
+                print(f"FAILED ({type(e).__name__}: {str(e)[:150]})")
+                failed += 1
 
         time.sleep(WAIT_SECONDS)
 

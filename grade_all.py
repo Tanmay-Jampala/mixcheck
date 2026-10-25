@@ -15,7 +15,11 @@ from grade import grade
 GENERATED_FOLDER = "generated"
 TESTS_FOLDER = "tests"
 RESULTS_FILE = "results/results.csv"
-LANGUAGE_ORDER = ["english", "hinglish", "benglish"]   # order for the summary
+LANGUAGE_ORDER = [                                       # order for the summary
+    "english", "hinglish", "benglish",
+    "english_casual", "hinglish_casual", "benglish_casual",
+    "hinglish_devanagari",
+]
 
 rows = []
 missing_tests = set()
@@ -48,7 +52,13 @@ for model in models:
         with open(os.path.join(model_folder, file_name), encoding="utf-8") as f:
             code_text = f.read()
 
-        passed, total, error = grade(code_text, test_file)
+        if code_text.startswith("# MODEL ERROR:"):
+            # The model gave no usable answer at all (see run_all.py)
+            from grade import load_tests
+            passed, total = 0, len(load_tests(test_file).CASES)
+            error = code_text.strip().lstrip("# ").strip()
+        else:
+            passed, total, error = grade(code_text, test_file)
         passed_all = total > 0 and passed == total
 
         status = "PASS" if passed_all else "FAIL"
@@ -86,4 +96,4 @@ for model in results["model"].unique():
         lang_rows = model_rows[model_rows["language"] == language]
         fully_passed = int(lang_rows["passed_all"].sum())
         count = len(lang_rows)
-        print(f"  {language:<10} {fully_passed}/{count} tasks passed  ({100 * fully_passed / count:.1f}%)")
+        print(f"  {language:<20} {fully_passed}/{count} tasks passed  ({100 * fully_passed / count:.1f}%)")
