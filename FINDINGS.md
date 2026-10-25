@@ -1,55 +1,55 @@
 # MixCheck findings (Oct 25, 2026)
 
-**Setup:** 25 Python tasks × 10 prompt versions × 3 models = 750 graded replies.
+**Setup:** 25 Python tasks × 10 prompt versions × 3 models = 750 graded answers.
 Models: Gemini (`gemini-flash-lite-latest`), Groq big (`openai/gpt-oss-120b`), Groq small (`openai/gpt-oss-20b`). Temperature 0, one run each.
-Every prompt asks for a named function and says "reply with only the code".
+Every prompt names the function to write and says "reply with only the code".
+All numbers below count every answer; nothing is left out. They match the dashboard.
 
 ## Headline
 
-> When the prompt is in English, the models get it right every time.
-> When the same task is mixed with an Indian language, they still mostly write working code,
-> but they **stop following instructions**: they rename the function, add long explanations, or reply in another script.
-> The lower-resource the mix, the bigger the drop.
+> In every language, the AI still writes working code most of the time: 91–97% in the casual versions, with Kanglish lowest.
+> What breaks is following instructions. Kanglish answers replied with only the code **35%** of the time; casual English answers did it **100%** of the time.
+> Only mixed prompts made the AI rename the function: 9 of 600 mixed prompts, against 0 of 150 English ones.
 
 ## The numbers
 
-Correct code, leaving out task19 (its spec is ambiguous, and it fails in English too) and 3 API errors:
+| Prompt group | Correct code | Followed "only code" |
+|---|---|---|
+| English (formal and casual) | 96.0% | 98.0% |
+| Hindi and Bengali mixes (5 versions) | 96.3% | 98.7% |
+| Kannada, Tamil and Odia mixes (3 versions) | **93.3%** | **77.8%** |
 
-| Prompt version | Correct code |
-|---|---|
-| English (formal and casual) | **100%** |
-| Hinglish (formal) | 100% |
-| Hinglish in Hindi script | 98.6% |
-| Benglish (formal) | 98.6% |
-| Hinglish casual | 97.2% |
-| Tanglish casual | 94.4% |
-| Odia-English casual | 94.4% |
-| Benglish casual | 93.1% |
-| **Kanglish casual** | **90.3%** |
+Fairest comparison: same casual style, only the language changes.
 
-Replied with only the code, as asked:
+| Casual version | Correct code | Followed "only code" |
+|---|---|---|
+| English | 97.3% | 100% |
+| Hinglish | 96.0% | 93.3% |
+| Benglish | 93.3% | 100% |
+| Tanglish | 94.7% | 98.7% |
+| Odia-English | 94.7% | 100% |
+| **Kanglish** | **90.7%** | **34.7%** |
 
-- English: 98% of replies. Mixed: 90.8%.
-- Groq big, Kanglish: **0 of 25**. Groq small, Kanglish: **1 of 25**.
-- 10 of Groq big's 25 Kanglish replies were partly written in Kannada script, even though the prompts were in Roman letters. The median reply was about 2,000 characters with two code blocks, when we asked for code only.
-- Gemini replied with only code 250 out of 250 times.
+- Groq big followed "only code" in **0 of 25** Kanglish prompts, and Groq small in 1 of 25.
+- 10 of Groq big's 25 Kanglish answers were partly written in Kannada script, even though the prompts were in Roman letters.
+- Gemini replied with only code all 250 times.
 
 ## The three kinds of failure
 
-1. **Wrong function name (9 cases, all in mixed prompts, none in English).** The exact name was in every one of these prompts.
-   - Groq small turned "bhai indian_format" into `def bhai_indian_format`: it took the slang word "bhai" as part of the name.
-   - Gemini wrote `compress_string` (Tanglish), `merge` (Kanglish) and `calculate_running_balance` (Odia).
-   - Groq small wrote `is_valid_mobile` (Odia).
-   - In a real codebase, any other code that calls the function by its real name would break.
-2. **Missed instruction details (comprehension).**
+1. **Wrong function name.**
+   - This happened in 9 of 600 mixed prompts and 0 of 150 English prompts. The exact name was written in every prompt.
+   - Groq small turned "bhai indian_format naam er python fn bana" into `def bhai_indian_format`. It read the slang word "bhai" as part of the name.
+   - Gemini wrote `compress_string` (Tanglish), `merge` (Kanglish) and `calculate_running_balance` (Odia). Groq small wrote `is_valid_mobile` (Odia).
+2. **Missed instruction details.**
    - The case-insensitive palindrome rule was ignored in casual Benglish and Odia.
    - An extra parameter was added to `missing_number` in Kanglish.
-3. **Ordinary coding bugs, not caused by the language. We count these honestly and do not blame the language for them.**
-   - task19 `minutes_between` fails the "same time → 0" case in English too.
-   - Groq big's `indian_format` crashed on 1000 in 4 mixed versions. It is a Python bug (`reversed(list) + list`) that it happened to avoid in English.
+3. **Mistakes that also happen in English.**
+   - task19 `minutes_between` says the end time is on the next day only when it is *earlier* than the start. 9 answers still returned 1,440 for equal times, including Gemini's English answers. This is an edge case that is hard in every language.
+   - Groq big's `indian_format` crashed on 1000 in 4 mixed versions. It is a plain Python bug (`reversed(list) + list`).
+   - Groq small made 3 API errors on English prompts: it tried to call a tool instead of answering. These count as fails, which is why English isn't 100%.
 
 ## Caveats (say these before a judge asks)
 
-- The sample is small: 25 tasks and one run per prompt. The differences are a few tasks each, so they are signals, not proof.
-- The Kanglish, Tanglish and Odia prompts were drafted with AI help and are still being checked by native speakers.
-- The "only code" check is strict: one explanation sentence counts as a fail. That is deliberate, because a tool that pastes AI output straight into an editor would break.
+- The sample is small: 25 tasks and one run per prompt. The correctness gaps are a few tasks each, so treat them as signals. The instruction-following gap for Kanglish (35% vs 100%) is large.
+- The Kanglish, Tanglish and Odia prompts were drafted with AI help and are being checked by native speakers.
+- The "only code" check is strict on purpose: one sentence of explanation counts as a fail. A tool that pastes AI output straight into an editor would break.
