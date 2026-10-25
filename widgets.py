@@ -156,6 +156,7 @@ def mix_dial(data):
     .light.fail { border-color:rgba(255,92,122,.5); background:rgba(255,92,122,.07); }
     .light .n { font-weight:600; font-size:.92rem; }
     .light .r { color:var(--muted); font-size:.8rem; }
+    .light .r.warn { color:var(--accent); }
     .keys { margin-top:.2rem; }
     """
     body = """
@@ -228,9 +229,10 @@ def mix_dial(data):
       $('lights').innerHTML = M.map(m => {
         const r = (t.results[v.key] || {})[m.key];
         if (!r) return `<div class="light"><i style="background:var(--faint)"></i><div><div class="n">${esc(m.label)}</div><div class="r">not run</div></div></div>`;
-        const ok = r[0] === r[1];
+        const ok = r[0] === r[1], fmt = r[2] !== false;
         return `<div class="light ${ok ? 'pass' : 'fail'}"><i></i><div><div class="n">${esc(m.label)}</div>
-                <div class="r">${ok ? 'Passed' : 'Failed'}: ${r[0]} of ${r[1]} tests</div></div></div>`;
+                <div class="r">${ok ? 'Passed' : 'Failed'}: ${r[0]} of ${r[1]} tests</div>
+                ${fmt ? '' : '<div class="r warn">Ignored "only code"</div>'}</div></div>`;
       }).join('');
     }
     function set(i){ dial.value = i; render(); }
@@ -255,30 +257,39 @@ def mix_dial(data):
 # ---------------------------------------------------------------
 def heat_grid(data):
     css = """
-    .wrap { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:1.2rem; align-items:start; }
-    @media (max-width: 900px) { .wrap { grid-template-columns:1fr; } }
-    table { width:100%; border-collapse:separate; border-spacing:6px; }
-    th { font-weight:500; color:var(--muted); font-size:.8rem; text-align:center; padding:0 .2rem .3rem; line-height:1.25; }
-    th.model { text-align:right; color:var(--text); font-size:.92rem; white-space:nowrap; padding-right:.6rem; }
-    td button { width:100%; height:68px; border-radius:12px; border:1px solid var(--border); background:var(--surface);
+    .bar-top { display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; margin:0 0 .8rem; }
+    .seg { display:inline-flex; padding:4px; border-radius:999px; background:var(--surface); border:1px solid var(--border); }
+    .seg button { border:0; background:none; padding:.45rem 1rem; border-radius:999px; color:var(--muted); font-weight:600;
+      transition: background .2s var(--ease), color .2s var(--ease); }
+    .seg button[aria-pressed="true"] { background:var(--accent); color:#1a0f00; }
+    .explain { color:var(--muted); font-size:.9rem; max-width:62ch; }
+    .wrap { display:grid; grid-template-columns:1fr; gap:1rem; }
+    .scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:separate; border-spacing:5px; }
+    th { font-weight:500; color:var(--muted); font-size:.74rem; text-align:center; padding:0 .1rem .3rem; line-height:1.2; }
+    th.model { text-align:right; color:var(--text); font-size:.9rem; white-space:nowrap; padding-right:.5rem; }
+    td button { width:100%; min-width:58px; height:64px; border-radius:12px; border:1px solid var(--border); background:var(--surface);
       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
       transition: transform .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease); }
     td button:hover { transform:translateY(-2px); border-color:rgba(155,140,255,.6); }
-    td button b { font-family:var(--display); font-size:1.15rem; font-weight:800; }
-    td button span { font-size:.75rem; color:var(--muted); }
-    td button.fail { background:linear-gradient(160deg, rgba(255,92,122,calc(var(--f) * .9)), rgba(255,92,122,calc(var(--f) * .35)));
-      border-color:rgba(255,92,122,.55); box-shadow:0 0 22px rgba(255,92,122,calc(var(--f) * .8)); }
+    td button b { font-family:var(--display); font-size:1.05rem; font-weight:800; }
+    td button span { font-size:.72rem; color:var(--muted); }
+    td button.bad { background:linear-gradient(160deg, rgba(var(--rgb),calc(var(--f) * .9)), rgba(var(--rgb),calc(var(--f) * .3)));
+      border-color:rgba(var(--rgb),.55); box-shadow:0 0 22px rgba(var(--rgb),calc(var(--f) * .7)); }
     td button.sel { outline:3px solid var(--accent); outline-offset:2px; }
     .hint { color:var(--faint); font-size:.85rem; margin:.4rem 0 0 .4rem; }
-    .drawer { padding:1.1rem 1.2rem; max-height:520px; overflow:auto; }
+    .drawer { padding:1.1rem 1.2rem; max-height:470px; overflow:auto; }
     .drawer h3 { font-family:var(--display); margin:0 0 .2rem; font-size:1.25rem; }
     .drawer .sub { color:var(--muted); margin:0 0 .9rem; font-size:.92rem; }
     .item { border-top:1px solid var(--border); padding:.8rem 0; }
     .item:first-of-type { border-top:0; }
     .item .head { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.5rem; }
     .item .t { font-weight:600; }
+    .pill.warn { background:rgba(255,159,28,.16); color:var(--accent); }
     .bubble { padding:.7rem .85rem; border-radius:12px 12px 12px 4px; background:var(--surface-2); border:1px solid var(--border);
       margin-bottom:.6rem; line-height:1.5; font-family:var(--indic), var(--body); }
+    .reply { white-space:pre-wrap; font-family:var(--indic), var(--body); font-size:.85rem; color:var(--muted); max-height:220px; overflow:auto;
+      padding:.7rem .85rem; border-radius:12px; background:#0B0919; border:1px solid var(--border); }
     .why { color:var(--muted); font-size:.85rem; margin-top:.5rem; }
     .passlist { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.4rem; }
     .passlist span { font-size:.78rem; color:var(--muted); padding:.2rem .55rem; border-radius:999px; background:rgba(43,217,160,.08);
@@ -287,9 +298,16 @@ def heat_grid(data):
     @keyframes slide { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:none; } }
     """
     body = """
+    <div class="bar-top">
+      <div class="seg" role="group" aria-label="What to show">
+        <button type="button" data-metric="correct" aria-pressed="true">Correct code</button>
+        <button type="button" data-metric="format" aria-pressed="false">Followed instructions</button>
+      </div>
+      <span class="explain" id="explain"></span>
+    </div>
     <div class="wrap">
-      <div>
-        <table id="grid" aria-label="Pass rate for each model and prompt version"></table>
+      <div class="scroll">
+        <table id="grid" aria-label="Results for each model and way of asking"></table>
         <p class="hint">Click any cell to see the answers behind it.</p>
       </div>
       <div class="glass drawer" id="drawer" aria-live="polite"></div>
@@ -298,37 +316,61 @@ def heat_grid(data):
     script = r"""
     const V = DATA.versions, M = DATA.models, C = DATA.cells;
     const grid = document.getElementById('grid'), drawer = document.getElementById('drawer');
-    let head = '<tr><th></th>' + V.map(v => `<th>${esc(v.label)}</th>`).join('') + '</tr>';
-    let rows = M.map(m => '<tr><th class="model">' + esc(m.label) + '</th>' + V.map(v => {
-      const c = (C[m.key] || {})[v.key];
-      if (!c) return '<td></td>';
-      const fails = c.total - c.passed, f = (fails / c.total).toFixed(3);
-      return `<td><button type="button" class="${fails ? 'fail' : ''}" style="--f:${Math.min(1, f * 3)}" data-m="${m.key}" data-v="${v.key}"
-              aria-label="${esc(m.label)}, ${esc(v.label)}: ${c.passed} of ${c.total} passed">
-              <b>${Math.round(100 * c.passed / c.total)}%</b><span>${c.passed}/${c.total}</span></button></td>`;
-    }).join('') + '</tr>').join('');
-    grid.innerHTML = head + rows;
+    const EXPLAIN = {
+      correct: 'Did the code work? We run the function the AI wrote against every test case.',
+      format: 'Did the AI do what we asked? Every prompt says to reply with only the code.'
+    };
+    let metric = 'correct', current = null;
+    const good = (c) => metric === 'correct' ? c.passed : c.formatted;
+    const okItem = (i) => metric === 'correct' ? i.ok : i.fmt;
 
+    function draw(){
+      document.getElementById('explain').textContent = EXPLAIN[metric];
+      const rgb = metric === 'correct' ? '255,92,122' : '255,159,28';
+      let html = '<tr><th></th>' + V.map(v => `<th>${esc(v.label)}</th>`).join('') + '</tr>';
+      html += M.map(m => '<tr><th class="model">' + esc(m.label) + '</th>' + V.map(v => {
+        const c = (C[m.key] || {})[v.key];
+        if (!c) return '<td></td>';
+        const g = good(c), bad = c.total - g, f = Math.min(1, 3 * bad / c.total).toFixed(3);
+        return `<td><button type="button" class="${bad ? 'bad' : ''}" style="--f:${f};--rgb:${rgb}" data-m="${m.key}" data-v="${v.key}"
+                aria-label="${esc(m.label)}, ${esc(v.label)}: ${g} of ${c.total}">
+                <b>${Math.round(100 * g / c.total)}%</b><span>${g}/${c.total}</span></button></td>`;
+      }).join('') + '</tr>').join('');
+      grid.innerHTML = html;
+      if (current) open(current[0], current[1]); else openWorst();
+    }
     function open(mk, vk){
+      current = [mk, vk];
       const m = M.find(x => x.key === mk), v = V.find(x => x.key === vk), c = C[mk][vk];
       document.querySelectorAll('td button').forEach(b => b.classList.toggle('sel', b.dataset.m === mk && b.dataset.v === vk));
-      const fails = c.items.filter(i => !i.ok), passes = c.items.filter(i => i.ok);
+      const bad = c.items.filter(i => !okItem(i)), fine = c.items.filter(i => okItem(i));
       drawer.classList.remove('enter'); void drawer.offsetWidth; drawer.classList.add('enter');
-      drawer.innerHTML = `<h3>${esc(m.label)} on ${esc(v.label)}</h3>
-        <p class="sub">${c.passed} of ${c.total} tasks passed every test${fails.length ? '. Here is what failed.' : '.'}</p>` +
-        fails.map(i => `<div class="item"><div class="head"><span class="pill fail">Failed ${i.passed}/${i.cases}</span>
-          <span class="t">${esc(i.title)}</span></div>
-          <div class="bubble">${esc(i.prompt)}</div>
-          ${i.code ? `<pre class="code">${highlight(i.code)}</pre>` : ''}
-          ${i.error ? `<div class="why">What went wrong: ${esc(i.error)}</div>` : ''}</div>`).join('') +
-        (passes.length ? `<div class="item"><div class="head"><span class="pill pass">Passed</span><span class="t">${passes.length} tasks</span></div>
-          <div class="passlist">${passes.map(i => `<span>${esc(i.title)}</span>`).join('')}</div></div>` : '');
+      const head = metric === 'correct'
+        ? `${c.passed} of ${c.total} tasks passed every test${bad.length ? '. Here is what failed.' : '.'}`
+        : `${c.formatted} of ${c.total} replies were only code, as asked${bad.length ? '. These added extra text or code.' : '.'}`;
+      drawer.innerHTML = `<h3>${esc(m.label)} on ${esc(v.label)}</h3><p class="sub">${head}</p>` +
+        bad.map(i => metric === 'correct'
+          ? `<div class="item"><div class="head"><span class="pill fail">Failed ${i.passed}/${i.cases}</span><span class="t">${esc(i.title)}</span></div>
+             <div class="bubble">${esc(i.prompt)}</div>${i.code ? `<pre class="code">${highlight(i.code)}</pre>` : ''}
+             ${i.error ? `<div class="why">What went wrong: ${esc(i.error)}</div>` : ''}</div>`
+          : `<div class="item"><div class="head"><span class="pill warn">Ignored "only code"</span><span class="t">${esc(i.title)}</span>
+             <span class="pill ${i.ok ? 'pass' : 'fail'}">${i.ok ? 'Code still correct' : 'Code also wrong'}</span></div>
+             <div class="bubble">${esc(i.prompt)}</div><div class="reply">${esc(i.reply || '')}</div></div>`).join('') +
+        (fine.length ? `<div class="item"><div class="head"><span class="pill pass">${metric === 'correct' ? 'Passed' : 'Only code'}</span>
+          <span class="t">${fine.length} tasks</span></div><div class="passlist">${fine.map(i => `<span>${esc(i.title)}</span>`).join('')}</div></div>` : '');
+    }
+    function openWorst(){
+      let best = null;
+      M.forEach(m => V.forEach(v => { const c = (C[m.key] || {})[v.key]; if (c) { const b = c.total - good(c); if (!best || b > best[2]) best = [m.key, v.key, b]; } }));
+      if (best) open(best[0], best[1]);
     }
     grid.addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (b) open(b.dataset.m, b.dataset.v); });
-    // open the most interesting cell first: the one with the most failures
-    let best = null;
-    M.forEach(m => V.forEach(v => { const c = (C[m.key] || {})[v.key]; if (c && (!best || c.total - c.passed > best[2])) best = [m.key, v.key, c.total - c.passed]; }));
-    if (best) open(best[0], best[1]);
+    document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+      metric = b.dataset.metric; current = null;
+      document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      draw();
+    }));
+    draw();
     """
     return _page(css, body, script, data)
 

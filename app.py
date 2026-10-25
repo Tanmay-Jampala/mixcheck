@@ -21,7 +21,7 @@ import streamlit.components.v1 as components
 
 import ui
 import widgets
-from grade import grade, strip_fences
+from grade import extract_code, grade, strip_fences
 from mixtag import build_english_vocab, mix_level, tag_words
 
 RESULTS_FILE = "results/results.csv"
@@ -61,6 +61,10 @@ ui.inject_styles()
 def load_results():
     df = pd.read_csv(RESULTS_FILE, keep_default_na=False)
     df["passed_all"] = df["passed_all"].astype(str).str.lower() == "true"
+    if "followed_format" in df.columns:
+        df["followed_format"] = df["followed_format"].astype(str).str.lower() == "true"
+    else:
+        df["followed_format"] = True   # older results files don't have this column
     return df
 
 
@@ -69,12 +73,20 @@ def load_tasks():
     return pd.read_csv(TASKS_FILE, dtype=str, keep_default_na=False, encoding="utf-8-sig")
 
 
-def read_code(model, task_id, version):
+def read_reply(model, task_id, version):
+    """The AI's full reply, exactly as it came back."""
     path = os.path.join("generated", model, f"{task_id}_{version}.py")
     if not os.path.exists(path):
         return ""
     with open(path, encoding="utf-8") as f:
-        return strip_fences(f.read())
+        return f.read()
+
+
+def read_code(model, task_id, version):
+    """The code we actually tested: the block that defines the function we asked for."""
+    reply = read_reply(model, task_id, version)
+    row = task_rows.get(task_id)
+    return extract_code(reply, row["function_name"] if row is not None else None) if reply else ""
 
 
 def exact_model_id(model):
@@ -118,7 +130,7 @@ def dial_data(_results_len):
             for m in models:
                 r = lookup.get((m, task_id, v))
                 if r is not None:
-                    res[v][m] = [int(r.passed_cases), int(r.total_cases)]
+                    res[v][m] = [int(r.passed_cases), int(r.total_cases), bool(r.followed_format)]
                     fails += 0 if r.passed_all else 1
         if fails > most_fails:
             most_fails, start = fails, i
@@ -149,7 +161,7 @@ with tab_results:
         (f"{total}", "answers graded", ui.T["brand"]),
         (f"{100 * passed / total:.1f}%", "passed every test case", ui.T["pass"]),
         (f"{total - passed}", "failed answers", ui.T["fail"]),
-        (f"{len(models)} × {len(versions)}", "models × ways of asking", ui.T["accent"]),
+        (f"{100 * results['followed_format'].mean():.1f}%", "replied with only code, as asked", ui.T["accent"]),
     ])
 
     by_version = results.groupby("language")["passed_all"].agg(["sum", "count"]).reindex(versions)
@@ -161,8 +173,18 @@ with tab_results:
                    f"{int(by_version.loc[hardest, 'fails'])} failed answers, {rate:.1f}% passed across all models.")
     else:
         ui.finding("Every model passed every task, however it was asked.")
+    by_format = results.groupby("language")["followed_format"].agg(["sum", "count"]).reindex(versions)
+    by_format["ignored"] = by_format["count"] - by_format["sum"]
+    worst_fmt = by_format["ignored"].idxmax()
+    baseline = by_format.loc["english_casual"] if "english_casual" in by_format.index else None
+    if by_format.loc[worst_fmt, "ignored"] > 0:
+        rate = 100 * by_format.loc[worst_fmt, "sum"] / by_format.loc[worst_fmt, "count"]
+        compare = (f" In casual English, {100 * baseline['sum'] / baseline['count']:.0f}% were."
+                   if baseline is not None and worst_fmt != "english_casual" else "")
+        ui.finding(f"{VERSIONS.get(worst_fmt, worst_fmt)} has the most replies that ignored the instructions: "
+                   f"{rate:.0f}% were only code, as asked.{compare}")
 
-    ui.section("Where the models fail", "Click a cell to open the answers behind it. Red cells had failures.")
+    ui.section("Where the models fail", "Switch between the two scores, then click a cell to open the answers behind it.")
     cells = {}
     for m in models:
         cells[m] = {}
@@ -179,29 +201,41 @@ with tab_results:
                     "prompt": row[v] if row is not None and v in tasks.columns else "",
                     "code": "" if r.passed_all else read_code(m, r.task_id, v),
                     "error": r.error,
+                    "fmt": bool(r.followed_format),
+                    "reply": "" if r.followed_format else read_reply(m, r.task_id, v)[:4000],
                 })
-            cells[m][v] = {"passed": int(rows["passed_all"].sum()), "total": len(rows), "items": items}
+            cells[m][v] = {"passed": int(rows["passed_all"].sum()), "formatted": int(rows["followed_format"].sum()),
+                           "total": len(rows), "items": items}
     components.html(widgets.heat_grid({"versions": version_list, "models": model_list, "cells": cells}),
-                    height=600, scrolling=False)
+                    height=880, scrolling=False)
 
-    ui.section("Failed answers by way of asking", "All models together.")
-    order = by_version.sort_values("fails")
-    bars = go.Figure(go.Bar(
-        x=order["fails"], y=[VERSIONS.get(v, v) for v in order.index], orientation="h",
-        marker={"color": [ui.VERSION_COLOURS.get(v, ui.T["brand"]) for v in order.index], "cornerradius": 4},
-        text=[f"{int(f)} failed" if f else "" for f in order["fails"]], textposition="outside",
-        textfont={"color": ui.T["text"]}, hovertemplate="%{y}: %{x} failed answers<extra></extra>",
-    ))
-    bars.update_layout(
-        height=60 + 46 * len(order), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Instrument Sans, Segoe UI, sans-serif", "color": ui.T["muted"], "size": 13},
-        margin={"l": 10, "r": 10, "t": 10, "b": 10},
-        hoverlabel={"bgcolor": ui.T["surface_2"], "font": {"color": ui.T["text"]}},
-    )
-    bars.update_xaxes(showgrid=True, gridcolor=ui.T["border"], zeroline=False, dtick=1, ticks="",
-                      automargin=True, range=[0, max(3, order["fails"].max() + 1)])
-    bars.update_yaxes(tickfont={"color": ui.T["text"], "size": 13}, ticks="", automargin=True)
-    st.plotly_chart(bars, width="stretch", theme=None)
+    ui.section("By way of asking", "All models together. Left: wrong code. Right: replies that ignored \"only code\".")
+
+    def count_bars(counts, word, colour_by_version=True):
+        order = counts.sort_values()
+        fig = go.Figure(go.Bar(
+            x=order.values, y=[VERSIONS.get(v, v) for v in order.index], orientation="h",
+            marker={"color": [ui.VERSION_COLOURS.get(v, ui.T["brand"]) for v in order.index], "cornerradius": 4},
+            text=[f"{int(c)} {word}" if c else "" for c in order.values], textposition="outside",
+            textfont={"color": ui.T["text"]}, hovertemplate="%{y}: %{x} " + word + "<extra></extra>",
+        ))
+        fig.update_layout(
+            height=60 + 40 * len(order), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font={"family": "Instrument Sans, Segoe UI, sans-serif", "color": ui.T["muted"], "size": 13},
+            margin={"l": 10, "r": 10, "t": 10, "b": 10},
+            hoverlabel={"bgcolor": ui.T["surface_2"], "font": {"color": ui.T["text"]}},
+        )
+        top = max(3, int(order.max()) + 2)
+        fig.update_xaxes(showgrid=True, gridcolor=ui.T["border"], zeroline=False, ticks="", automargin=True,
+                         range=[0, top * 1.15], dtick=max(1, top // 6))
+        fig.update_yaxes(tickfont={"color": ui.T["text"], "size": 12}, ticks="", automargin=True)
+        return fig
+
+    left, right = st.columns(2)
+    with left:
+        st.plotly_chart(count_bars(by_version["fails"], "wrong"), width="stretch", theme=None)
+    with right:
+        st.plotly_chart(count_bars(by_format["ignored"], "ignored"), width="stretch", theme=None)
 
     with st.expander("See the full pass-rate table"):
         pivot = (results.assign(pct=results["passed_all"] * 100)
@@ -270,6 +304,9 @@ with tab_failures:
             code = read_code(r.model, r.task_id, r.language)
             if code:
                 st.code(code, language="python")
+            if not r.followed_format:
+                with st.expander("This reply also ignored \"only code\": see the full reply"):
+                    st.text(read_reply(r.model, r.task_id, r.language))
 
 # ---------------------------------------------------------------
 # Try it live
@@ -363,10 +400,10 @@ with tab_how:
                            "Every version asks for the same function, so only the language changes."),
         ("Native-speaker checks", "Hinglish is checked by Hindi speakers on our team, Benglish by a Bengali speaker."),
         ("Ask the models", f"Every prompt goes to {len(models)} AI models at temperature 0, so answers are repeatable."),
-        ("Run the code", "Each answer runs in a separate process with a time limit, against the same test cases, "
-                         "including tricky ones like empty lists."),
-        ("Compare", "Passed in English but failed in a mixed version of the same task? "
-                    "Then the language caused the failure."),
+        ("Run the code", "We test the code block that defines the function we asked for. It runs in a separate "
+                         "process with a time limit, against the same test cases, including tricky ones like empty lists."),
+        ("Two scores", "Correct code: did the function pass every test? Followed instructions: was the reply only "
+                       "code, as every prompt asks? Compare each mixed version with the same task in English."),
     ])
     ui.section("Models tested")
     st.markdown(" ".join(

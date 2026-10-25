@@ -10,7 +10,7 @@ import os
 
 import pandas as pd
 
-from grade import grade
+from grade import followed_format, grade
 
 GENERATED_FOLDER = "generated"
 TESTS_FOLDER = "tests"
@@ -61,6 +61,7 @@ for model in models:
         else:
             passed, total, error = grade(code_text, test_file)
         passed_all = total > 0 and passed == total
+        format_ok = followed_format(code_text)   # did it reply with only the code, as asked?
 
         status = "PASS" if passed_all else "FAIL"
         print(f"{file_name}: {passed}/{total} {status}" + (f"  ({error})" if error else ""))
@@ -73,12 +74,13 @@ for model in models:
             "total_cases": total,
             "passed_all": passed_all,
             "error": error or "",
+            "followed_format": format_ok,
         })
 
 # Save the results table
 os.makedirs(os.path.dirname(RESULTS_FILE), exist_ok=True)
 results = pd.DataFrame(rows, columns=[
-    "model", "task_id", "language", "passed_cases", "total_cases", "passed_all", "error"
+    "model", "task_id", "language", "passed_cases", "total_cases", "passed_all", "error", "followed_format"
 ])
 results.to_csv(RESULTS_FILE, index=False, encoding="utf-8")
 print(f"\nSaved {len(results)} rows to {RESULTS_FILE}")
@@ -87,7 +89,7 @@ if missing_tests:
     print(f"Skipped tasks with no test file yet: {', '.join(sorted(missing_tests))}")
 
 # Pass rate = share of tasks where the code passed ALL test cases
-print("\n=== Pass rate by language ===")
+print("\n=== Pass rate by language (correct code | replied with only code) ===")
 for model in results["model"].unique():
     print(f"{model}:")
     model_rows = results[results["model"] == model]
@@ -97,4 +99,6 @@ for model in results["model"].unique():
         lang_rows = model_rows[model_rows["language"] == language]
         fully_passed = int(lang_rows["passed_all"].sum())
         count = len(lang_rows)
-        print(f"  {language:<20} {fully_passed}/{count} tasks passed  ({100 * fully_passed / count:.1f}%)")
+        formatted = int(lang_rows["followed_format"].sum())
+        print(f"  {language:<20} {fully_passed}/{count} correct ({100 * fully_passed / count:5.1f}%)"
+              f"  |  {formatted}/{count} only code ({100 * formatted / count:5.1f}%)")

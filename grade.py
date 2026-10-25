@@ -21,16 +21,55 @@ RESULT_MARKER = "__MIXCHECK_RESULT__"
 
 
 # ---------------------------------------------------------------
-# Part 1: remove the ```python ... ``` fences from the AI's reply
+# Part 1: find the code in the AI's reply
 # ---------------------------------------------------------------
+FENCE = r"```[a-zA-Z0-9]*[ \t]*\n(.*?)```"
+
+
+def code_blocks(reply_text):
+    return re.findall(FENCE, reply_text, flags=re.DOTALL)
+
+
+def extract_code(reply_text, function_name=None):
+    """Return the code we should test.
+
+    Replies often contain several code blocks (the function, then usage examples,
+    then sample output). Like standard benchmarks, we test the block that defines
+    the function we asked for. If there are no ``` fences, the reply is the code."""
+    blocks = code_blocks(reply_text)
+    if not blocks:
+        return reply_text.strip()
+    if function_name:
+        for block in blocks:
+            if re.search(rf"\bdef\s+{re.escape(function_name)}\s*\(", block):
+                return block.strip()
+    for block in blocks:
+        if re.search(r"\bdef\s+\w+\s*\(", block):
+            return block.strip()
+    return blocks[0].strip()
+
+
 def strip_fences(reply_text):
-    """Return only the code inside ``` fences. If there are no fences,
-    return the reply as it is."""
-    pattern = r"```[a-zA-Z0-9]*[ \t]*\n(.*?)```"
-    blocks = re.findall(pattern, reply_text, flags=re.DOTALL)
+    """Kept for older code: the first block that defines a function."""
+    return extract_code(reply_text)
+
+
+def followed_format(reply_text):
+    """Did the AI do what we asked, "reply with only the code"?
+    True if the reply is exactly one code block with nothing around it,
+    or plain code with no fences at all."""
+    text = reply_text.strip()
+    if text.startswith("# MODEL ERROR"):
+        return False
+    blocks = code_blocks(text)
     if blocks:
-        return "\n\n".join(blocks).strip()
-    return reply_text.strip()
+        outside = re.sub(r"```[a-zA-Z0-9]*[ \t]*\n.*?```", "", text, flags=re.DOTALL).strip()
+        return len(blocks) == 1 and outside == ""
+    try:
+        compile(text, "reply", "exec")
+        return True
+    except (SyntaxError, ValueError):
+        return False
 
 
 # ---------------------------------------------------------------
@@ -100,8 +139,9 @@ finish()
 # ---------------------------------------------------------------
 def grade(code_text, test_file):
     """Returns (passed, total, error). error is None if nothing crashed."""
-    total = len(load_tests(test_file).CASES)
-    code = strip_fences(code_text)
+    tests = load_tests(test_file)
+    total = len(tests.CASES)
+    code = extract_code(code_text, tests.FUNCTION)
 
     with tempfile.TemporaryDirectory() as temp_folder:
         solution_path = os.path.join(temp_folder, "ai_solution.py")
