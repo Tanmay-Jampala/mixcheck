@@ -37,6 +37,7 @@ LANGUAGES = [
     "english", "hinglish", "benglish",                        # clean, formal versions
     "english_casual", "hinglish_casual", "benglish_casual",   # how people really type
     "hinglish_devanagari",                                    # Hinglish in Hindi script
+    "kanglish_casual", "tanglish_casual", "odia_casual",      # Kannada, Tamil, Odia mixed with English
 ]
 WAIT_SECONDS = 6              # pause after each request (free-tier rate limits)
 

@@ -19,6 +19,7 @@ LANGUAGE_ORDER = [                                       # order for the summary
     "english", "hinglish", "benglish",
     "english_casual", "hinglish_casual", "benglish_casual",
     "hinglish_devanagari",
+    "kanglish_casual", "tanglish_casual", "odia_casual",
 ]
 
 rows = []
