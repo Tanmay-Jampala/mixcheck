@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 MODEL_IDS = {
     "gemini": "gemini-flash-lite-latest",
     "groq": "openai/gpt-oss-120b",
-    "groq-small": "auto",     # picks the first small model below that Groq offers
+    "groq-small": "openai/gpt-oss-20b",   # pinned: the model all our results use (use "auto" to pick from the list below)
 }
 # Small, cheap models to try for "groq-small", in order of preference
 SMALL_GROQ_CANDIDATES = [
