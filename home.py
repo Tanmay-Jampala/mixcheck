@@ -18,8 +18,16 @@ SITE = Path(__file__).parent / "website"
 st.set_page_config(page_title="MixCheck · El Rata Alada", layout="wide", initial_sidebar_state="collapsed")
 
 
+SITE_FILES = ("index.html", "styles.css", "main.js", "logo.svg")
+
+
+def site_version():
+    """Changes whenever a site file changes, so a new deploy never serves a cached old page."""
+    return tuple((SITE / name).stat().st_mtime_ns for name in SITE_FILES)
+
+
 @st.cache_data
-def site_html():
+def site_html(version):
     html = (SITE / "index.html").read_text(encoding="utf-8")
     css = (SITE / "styles.css").read_text(encoding="utf-8")
     js = (SITE / "main.js").read_text(encoding="utf-8")
@@ -48,4 +56,4 @@ st.html("""
 </style>
 """)
 
-components.html(site_html(), height=900, scrolling=True)
+components.html(site_html(site_version()), height=900, scrolling=True)
