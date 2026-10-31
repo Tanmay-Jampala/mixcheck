@@ -438,7 +438,7 @@ def guess_game(data):
       const c = D[i], right = guessPass === c.ok; results[i] = right; dots();
       document.getElementById('ask').innerHTML = `<button class="btn n" id="next" type="button">${i + 1 < D.length ? 'Next card' : 'See your score'}</button>`;
       document.getElementById('rev').innerHTML = (`<div class="reveal ${right ? 'right' : 'wrong'}">
-        <div class="big">${right ? 'Correct' : 'Not quite'}: it ${c.ok ? 'passed' : 'failed'} ${c.passed} of ${c.cases} tests</div>
+        <div class="big">${right ? 'Correct' : 'Not quite'}: ${c.ok ? `it passed all ${c.cases} tests` : `it fails, passing only ${c.passed} of ${c.cases} tests`}</div>
         <div class="why">${esc(c.why)}</div></div>`);
       document.getElementById('next').focus();
     }
