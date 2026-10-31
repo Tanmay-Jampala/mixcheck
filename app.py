@@ -144,7 +144,7 @@ def dial_data(_results_len):
     }
 
 
-components.html(widgets.mix_dial(dial_data(len(results))), height=650, scrolling=False)
+components.html(widgets.mix_dial(dial_data(len(results))), height=820, scrolling=True)
 
 tab_results, tab_game, tab_failures, tab_live, tab_how = st.tabs(
     ["Results", "Guess the verdict", "Failures", "Try it live", "How it works"]
@@ -207,7 +207,7 @@ with tab_results:
             cells[m][v] = {"passed": int(rows["passed_all"].sum()), "formatted": int(rows["followed_format"].sum()),
                            "total": len(rows), "items": items}
     components.html(widgets.heat_grid({"versions": version_list, "models": model_list, "cells": cells}),
-                    height=880, scrolling=False)
+                    height=900, scrolling=True)
 
     ui.section("By way of asking", "All models together. Left: wrong code. Right: replies that ignored \"only code\".")
 
@@ -281,7 +281,7 @@ with tab_game:
                      "why": "It gave the right answer on every test case, including the tricky ones."})
     rng.shuffle(deck)
     if deck:
-        components.html(widgets.guess_game({"deck": deck[:10]}), height=720, scrolling=False)
+        components.html(widgets.guess_game({"deck": deck[:10]}), height=780, scrolling=True)
     else:
         st.info("Run run_all.py and grade_all.py first, so there are answers to guess about.")
 

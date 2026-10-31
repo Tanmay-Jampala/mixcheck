@@ -119,8 +119,8 @@ def mix_dial(data):
     .play { margin-left:auto; border:1px solid rgba(255,159,28,.5); background:rgba(255,159,28,.12); color:var(--accent);
       border-radius:999px; padding:.4rem 1rem; font-weight:600; transition:background .2s var(--ease); }
     .play:hover { background:rgba(255,159,28,.22); }
-    .prompt { margin:1rem 0 .8rem; min-height:9.5rem; padding:1rem 1.1rem; border-radius:16px 16px 16px 4px;
-      background:rgba(11,9,25,.55); border:1px solid var(--border); font-size:1.12rem; font-family:var(--indic), var(--body); }
+    .prompt { margin:1rem 0 .8rem; min-height:9.5rem; max-height:15rem; overflow-y:auto; padding:1rem 1.1rem; border-radius:16px 16px 16px 4px;
+      background:rgba(11,9,25,.55); border:1px solid var(--border); font-size:1.05rem; font-family:var(--indic), var(--body); }
     .prompt .w { opacity:0; transform:translateY(6px); transition: opacity .35s var(--ease), transform .35s var(--ease);
       transition-delay: calc(min(var(--i), 40) * 12ms); }
     .prompt.in .w { opacity:1; transform:none; }
@@ -231,7 +231,7 @@ def mix_dial(data):
         if (!r) return `<div class="light"><i style="background:var(--faint)"></i><div><div class="n">${esc(m.label)}</div><div class="r">not run</div></div></div>`;
         const ok = r[0] === r[1], fmt = r[2] !== false;
         return `<div class="light ${ok ? 'pass' : 'fail'}"><i></i><div><div class="n">${esc(m.label)}</div>
-                <div class="r">${ok ? 'Passed' : 'Failed'}: ${r[0]} of ${r[1]} tests</div>
+                <div class="r">Passed ${r[0]} of ${r[1]} tests</div>
                 ${fmt ? '' : '<div class="r warn">Ignored "only code"</div>'}</div></div>`;
       }).join('');
     }
