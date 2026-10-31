@@ -11,12 +11,24 @@ from functools import lru_cache
 
 from dotenv import load_dotenv
 
-load_dotenv()  # reads GEMINI_API_KEY and GROQ_API_KEY from .env
+load_dotenv()  # on a laptop: reads GEMINI_API_KEY and GROQ_API_KEY from .env
+
+
+def _key(name):
+    """API key from the environment (.env on a laptop), or from Streamlit secrets when deployed."""
+    value = os.getenv(name)
+    if value:
+        return value
+    try:
+        import streamlit as st
+        return st.secrets.get(name)
+    except Exception:
+        return None
 
 MODEL_IDS = {
     "gemini": "gemini-flash-lite-latest",
     "groq": "openai/gpt-oss-120b",
-    "groq-small": "auto",
+    "groq-small": "openai/gpt-oss-20b",   # pinned: the model all our results use
 }
 SMALL_GROQ_CANDIDATES = [
     "llama-3.1-8b-instant",
@@ -29,13 +41,13 @@ SMALL_GROQ_CANDIDATES = [
 @lru_cache(maxsize=None)
 def _gemini_client():
     from google import genai
-    return genai.Client()
+    return genai.Client(api_key=_key("GEMINI_API_KEY"))
 
 
 @lru_cache(maxsize=None)
 def _groq_client():
     from groq import Groq
-    return Groq()
+    return Groq(api_key=_key("GROQ_API_KEY"))
 
 
 @lru_cache(maxsize=None)
