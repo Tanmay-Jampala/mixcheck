@@ -1,61 +1,60 @@
-**Python ನಲ್ಲಿ `count_words` ಎಂಬ ಫಂಕ್ಷನ್ ಬರೆಯುವ ಸರಳ ಮಾರ್ಗ**
+**Python‑ನಲ್ಲಿ “count_words” ಎಂಬ ಫಂಕ್ಷನ್ ಬರೆಯುವ ಸರಳ ವಿಧಾನ**
 
 ```python
 def count_words(text: str) -> int:
     """
-    ಕೊಟ್ಟಿರುವ ಸ್ಟ್ರಿಂಗ್‌ನಲ್ಲಿರುವ ಪದಗಳ ಸಂಖ್ಯೆಯನ್ನು ಹಿಂತಿರುಗಿಸುತ್ತದೆ.
+    ಕೊಟ್ಟಿರುವ string‑ನಲ್ಲಿ ಎಷ್ಟು ಪದಗಳಿವೆ ಎಂದು ಎಣಿಸುತ್ತದೆ.
 
-    ಪದಗಳು ಖಾಲಿ ಜಾಗ (space)ಗಳಿಂದ ಬೇರ್ಪಡಿರುತ್ತವೆ.
-    - ಮುಂಭಾಗ/ಅಂತ್ಯದ ಖಾಲಿ ಜಾಗಗಳು
-    - ಅನೇಕ ಖಾಲಿ ಜಾಗಗಳು
-    ಇವುಗಳನ್ನು ಪದಗಳಾಗಿ ಪರಿಗಣಿಸುವುದಿಲ್ಲ.
+    ಪದಗಳು ಎಂದರೆ space (ಅಥವಾ ಯಾವುದೇ whitespace) ಮೂಲಕ ಬೇರ್ಪಡಿಸಿದ non‑empty
+    ಭಾಗಗಳು.  ಆರಂಭ/ಅಂತ್ಯದಲ್ಲಿರುವ extra spaces, ಅಥವಾ ಮಧ್ಯದಲ್ಲಿರುವ
+    ಅನೇಕ spaces ಗಳನ್ನು ನಿರ್ಲಕ್ಷಿಸಲಾಗುತ್ತದೆ.
 
     Parameters
     ----------
     text : str
-        ಪದಗಳ ಸಂಖ್ಯೆಯನ್ನು ಎಣಿಸಬೇಕಾದ ಸ್ಟ್ರಿಂಗ್.
+        ಪದಗಳನ್ನು ಎಣಿಸಬೇಕಾದ string.
 
     Returns
     -------
     int
-        ಪದಗಳ ಸಂಖ್ಯೆ.  ಸ್ಟ್ರಿಂಗ್ ಖಾಲಿ ಇದ್ದರೆ 0 ಹಿಂತಿರುಗಿಸುತ್ತದೆ.
+        ಪದಗಳ ಸಂಖ್ಯೆ.
     """
-    if not text:          # None, '' ಅಥವಾ ಕೇವಲ ಖಾಲಿ ಜಾಗಗಳಿದ್ದರೆ
-        return 0
+    # 1. split() ಬಳಸಿದರೆ, ಯಾವುದೇ whitespace (space, tab, newline) ಗಳಲ್ಲಿ
+    #    ಬೇರ್ಪಡಿಸಿ, ಖಾಲಿ string ಗಳನ್ನು ಸ್ವಯಂ ತೆಗೆದುಹಾಕುತ್ತದೆ.
+    # 2. split(' ') ಬಳಸಿದರೆ, ಕೇವಲ space‑ಗಳಲ್ಲೇ ಬೇರ್ಪಡಿಸಿ, ಖಾಲಿ string
+    #    ಗಳನ್ನು ಕೈಯಾರೆ ಫಿಲ್ಟರ್ ಮಾಡಬೇಕು.
+    # ಇಲ್ಲಿ split() ನ್ನೇ ಬಳಸುತ್ತಿದ್ದೇವೆ – ಇದು ಹೆಚ್ಚು ಸಾಮಾನ್ಯ.
 
-    # str.split() ಯಾವುದೇ ಸಂಖ್ಯೆಯ whitespace ಅನ್ನು delimiter ಆಗಿ ಬಳಸುತ್ತದೆ
-    # ಮತ್ತು ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್‌ಗಳನ್ನು ಹಿಂತಿರುಗಿಸುವುದಿಲ್ಲ.
-    words = text.split()
+    words = text.split()          # ['Hello', 'world', 'Python']
     return len(words)
 ```
 
-### ಬಳಕೆ ಉದಾಹರಣೆ
+### ಉದಾಹರಣೆಗಳು
 
 ```python
-print(count_words("   Hello   world  this is   Python   "))  # 5
-print(count_words("one two three"))                          # 3
-print(count_words(""))                                      # 0
-print(count_words("   "))                                    # 0
+print(count_words("Hello world"))          # 2
+print(count_words("  Hello   world  "))    # 2
+print(count_words("one two   three"))      # 3
+print(count_words(""))                     # 0
+print(count_words("   "))                  # 0
 ```
 
-### ಏಕೆ `split()` ಬಳಸುವುದು?
-
-- `split()` ಯಾವುದೇ whitespace (space, tab, newline) ಅನ್ನು delimiter ಆಗಿ ಪರಿಗಣಿಸುತ್ತದೆ.
-- ಅನೇಕ ಖಾಲಿ ಜಾಗಗಳಿದ್ದರೂ, ಅದು ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್‌ಗಳನ್ನು ಹಿಂತಿರುಗಿಸುವುದಿಲ್ಲ, ಆದ್ದರಿಂದ `len()` ನಿಂದ ನೇರವಾಗಿ ಪದಗಳ ಸಂಖ್ಯೆ ಪಡೆಯಬಹುದು.
-- ಸರಳ, ಓದಲು ಸುಲಭ, ಮತ್ತು Python ನ ಸ್ಟ್ಯಾಂಡರ್ಡ್ ಲೈಬ್ರರಿಯಲ್ಲೇ ಇದೆ.
-
-### ಪರ್ಯಾಯ: Regular Expression
+### ಪರ್ಯಾಯ: `re` (regular expressions) ಬಳಸಿ
 
 ```python
 import re
 
 def count_words_regex(text: str) -> int:
-    return len(re.findall(r'\b\w+\b', text))
+    # \S+  : 1 ಅಥವಾ ಹೆಚ್ಚಿನ non‑whitespace ಅಕ್ಷರಗಳ ಗುಂಪು
+    return len(re.findall(r'\S+', text))
 ```
 
-ಇದು ಪದಗಳ ವ್ಯಾಖ್ಯಾನವನ್ನು ಸ್ವಲ್ಪ ಕಠಿಣಗೊಳಿಸುತ್ತದೆ (ಅಕ್ಷರ/ಸಂಖ್ಯೆ/ಅಂಡರ್ಸ್ಕೋರ್ ಮಾತ್ರ), ಆದರೆ `split()` ನಿಗಿಂತ ಹೆಚ್ಚು ನಿಯಂತ್ರಣ ಬೇಕಾದರೆ ಬಳಸಬಹುದು.
+`re.findall(r'\S+', text)` ಕೂಡ ಖಾಲಿ string ಗಳನ್ನು ಹೊರತುಪಡಿಸಿ, ಯಾವುದೇ whitespace‑ನಲ್ಲಿ ಬೇರ್ಪಡಿಸಿದ ಪದಗಳ ಪಟ್ಟಿಯನ್ನು ನೀಡುತ್ತದೆ.
 
 ---
 
 **ಸಾರಾಂಶ**  
-`text.split()` ಬಳಸಿ, ಮುಂಭಾಗ/ಅಂತ್ಯದ/ಅನೇಕ ಖಾಲಿ ಜಾಗಗಳನ್ನೂ ನಿರ್ಲಕ್ಷಿಸಿ, ಸರಳವಾಗಿ ಪದಗಳ ಸಂಖ್ಯೆಯನ್ನು ಎಣಿಸಬಹುದು. ಮೇಲಿನ `count_words` ಫಂಕ್ಷನ್ ಅನ್ನು ನೇರವಾಗಿ ನಿಮ್ಮ ಪ್ರಾಜೆಕ್ಟ್‌ನಲ್ಲಿ ಬಳಸಬಹುದು.
+- `split()` (ಅಥವಾ `split(' ')` + ಫಿಲ್ಟರ್) ಬಳಸಿ, ಆರಂಭ/ಅಂತ್ಯ/ಮಧ್ಯದ extra spaces ಗಳನ್ನು ನಿರ್ಲಕ್ಷಿಸಿ, ಸರಳವಾಗಿ ಪದಗಳ ಸಂಖ್ಯೆಯನ್ನು ಪಡೆಯಬಹುದು.  
+- `re.findall(r'\S+', text)` ಕೂಡ ಅದೇ ಕೆಲಸ ಮಾಡುತ್ತದೆ, ಆದರೆ regex ಬಳಸುವಾಗ ಸ್ವಲ್ಪ ಹೆಚ್ಚು ಕೋಡ್ ಬರೆಯಬೇಕಾಗಬಹುದು.  
+
+ಇದರಿಂದ ನಿಮ್ಮ “count_words” ಫಂಕ್ಷನ್ ಸಂಪೂರ್ಣವಾಗಿ ಸಿದ್ಧ! 🚀

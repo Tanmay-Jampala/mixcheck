@@ -1,0 +1,1 @@
+Write the `are_anagrams` function in Python; it takes two lowercase words, and if both contain the same letters the same number of times, return True, otherwise return False. Write the code.

@@ -1,0 +1,1 @@
+I need a Python function called missing_number. In a list, there are all numbers from 1 to n except one missing number. The order can be arbitrary. Return the missing number. Write the code.

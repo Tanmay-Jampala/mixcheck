@@ -5,11 +5,12 @@ def compress(s):
     res = []
     i = 0
     while i < len(s):
+        char = s[i]
         count = 1
-        while i + 1 < len(s) and s[i] == s[i + 1]:
+        while i + 1 < len(s) and s[i + 1] == char:
             count += 1
             i += 1
-        res.append(s[i] if count == 1 else s[i] + str(count))
+        res.append(char + (str(count) if count > 1 else ""))
         i += 1
     return "".join(res)
 ```

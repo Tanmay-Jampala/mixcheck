@@ -1,0 +1,1 @@
+Need a `second_largest` function in Python; given a list containing all numbers, return the second largest number, and if there are fewer than 2 numbers, return `None`. Write the code.

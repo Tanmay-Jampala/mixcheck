@@ -1,0 +1,1 @@
+Create a Python function that calculates the factorial, handle negative n, and remember that 0 factorial is 1. Provide the code.

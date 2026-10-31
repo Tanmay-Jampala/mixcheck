@@ -1,49 +1,34 @@
-**Python function – `sort_words`**
+**Python – `sort_words`**
 
 ```python
 from typing import List
 
 def sort_words(sentence: str) -> List[str]:
     """
-    Return a list of the unique words in *sentence* (all lower‑cased),
-    sorted first by length (shortest → longest) and then alphabetically
-    for words of the same length.
+    Return a list of the unique words in *sentence*.
 
-    Rules
-    -----
-    * The input sentence contains only words separated by a single space,
-      no punctuation.
-    * Words that differ only by case (e.g. "Apple" and "apple") are treated
-      as the same word – the lower‑cased form is kept.
+    * The input sentence contains only alphabetic words separated by a single
+      space – no punctuation.
+    * Words are treated case‑insensitively; the returned words are all lower‑case.
+    * The result is sorted
+          1. by increasing length
+          2. for equal length, alphabetically.
     * If the sentence is empty (or only whitespace) an empty list is returned.
-
-    Parameters
-    ----------
-    sentence: str
-        A space‑separated string of words.
-
-    Returns
-    -------
-    List[str]
-        Sorted list of unique, lower‑cased words.
 
     Examples
     --------
-    >>> sort_words("Banana apple Orange banana")
-    ['apple', 'banana', 'orange']
+    >>> sort_words("Apple banana apple Orange")
+    ['apple', 'orange', 'banana']
 
     >>> sort_words("")
     []
-
-    >>> sort_words("cat dog ant bee")
-    ['ant', 'bee', 'cat', 'dog']
     """
-    # 1️⃣  Empty or whitespace‑only input → empty list
+    # 1️⃣  Empty / whitespace‑only input → empty list
     if not sentence or sentence.strip() == "":
         return []
 
-    # 2️⃣  Split, lower‑case and deduplicate
-    #     Using a set guarantees uniqueness irrespective of original case.
+    # 2️⃣  Split, normalise to lower‑case and keep only one copy of each word
+    #     (using a set gives O(1) look‑up for duplicates)
     unique_words = {word.lower() for word in sentence.split()}
 
     # 3️⃣  Sort by (length, alphabetical)
@@ -53,16 +38,14 @@ def sort_words(sentence: str) -> List[str]:
 
 
 # ----------------------------------------------------------------------
-# Quick self‑test (run only when this file is executed directly)
+# Quick self‑test (run only when the file is executed directly)
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     test_cases = [
-        ("Banana apple Orange banana", ['apple', 'banana', 'orange']),
-        ("cat dog ant bee", ['ant', 'bee', 'cat', 'dog']),
+        ("Apple banana apple Orange", ['apple', 'orange', 'banana']),
+        ("dog cat mouse Dog", ['cat', 'dog', 'mouse']),
         ("", []),
-        ("  ", []),
-        ("Hello hello HELLO world WORLD", ['world', 'hello']),
-        ("a aa aaa aaaa", ['a', 'aa', 'aaa', 'aaaa']),
+        ("One two three Four five six", ['one', 'two', 'six', 'four', 'five', 'three']),
     ]
 
     for i, (inp, expected) in enumerate(test_cases, 1):
@@ -72,15 +55,11 @@ if __name__ == "__main__":
 ```
 
 ### How it works
-1. **Empty check** – If the string is empty or only spaces, we immediately return `[]`.
-2. **Normalization & deduplication** –  
-   ```python
-   {word.lower() for word in sentence.split()}
-   ```  
-   splits on the single spaces, lower‑cases each token, and stores them in a set, automatically removing duplicates (including those that differ only by case).
-3. **Sorting** – `sorted(..., key=lambda w: (len(w), w))` orders the words by:
-   * `len(w)` – shortest first,
-   * `w` – alphabetical order when lengths are equal.
-4. **Return** – The sorted list is returned.
+| Step | What happens | Why |
+|------|--------------|-----|
+| **1** | `if not sentence or sentence.strip() == "":` | Handles the *empty* case – returns `[]` as required. |
+| **2** | `{word.lower() for word in sentence.split()}` | `split()` gives the words (single‑space guaranteed). Converting each to `lower()` makes the function case‑insensitive, and the set removes duplicates. |
+| **3** | `sorted(..., key=lambda w: (len(w), w))` | The key is a tuple: first the length (so shorter words come first), then the word itself (alphabetical order for equal lengths). |
+| **4** | `return sorted_words` | Returns the final list. |
 
-Feel free to drop this function into any module or script; it meets all the requirements you described.
+The function runs in **O(n log n)** time where *n* is the number of distinct words (the sorting step), and uses **O(n)** extra space for the set of unique words.

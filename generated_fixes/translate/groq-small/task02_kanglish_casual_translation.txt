@@ -1,0 +1,1 @@
+I need a Python function called count_vowels that counts how many vowels (a e i o u, including capital letters) are in a string and returns that count. Please provide the code.

@@ -291,6 +291,31 @@ def faceoff_summary(left_label, left_ok, right_label, right_ok, left_fmt=None, r
     _html(f'<div class="mc-faceoff"><div class="t">{esc(title)}</div><p>{esc(note)}</p></div>')
 
 
+def table(headers, rows, highlight=()):
+    """A styled table. rows: lists of cells (cells may contain simple HTML we built ourselves).
+    highlight: indexes of rows to mark with the accent colour."""
+    head = "".join(f'<th style="text-align:{"left" if i == 0 else "right"};padding:.55rem .8rem;color:{T["faint"]};'
+                   f'font-weight:600;font-size:.82rem;border-bottom:1px solid {T["border"]}">{esc(h)}</th>'
+                   for i, h in enumerate(headers))
+    body = ""
+    for r_i, row in enumerate(rows):
+        bg = "rgba(255,159,28,.08)" if r_i in highlight else "transparent"
+        cells = "".join(f'<td style="text-align:{"left" if i == 0 else "right"};padding:.55rem .8rem;'
+                        f'border-bottom:1px solid {T["border"]};color:{T["text"]}">{c}</td>'
+                        for i, c in enumerate(row))
+        body += f'<tr style="background:{bg}">{cells}</tr>'
+    _html(f'<div style="overflow-x:auto;background:{T["surface"]};border:1px solid {T["border"]};border-radius:16px;'
+          f'padding:.4rem .6rem;margin:.6rem 0 1rem"><table style="width:100%;border-collapse:collapse;'
+          f'font-size:.92rem">{head and "<thead><tr>" + head + "</tr></thead>"}<tbody>{body}</tbody></table></div>')
+
+
+def tag(text, kind):
+    """Small coloured label: kind is 'pass', 'fail', 'warn' or 'muted'."""
+    colour = {"pass": T["pass"], "fail": T["fail"], "warn": T["accent"], "muted": T["muted"]}[kind]
+    return (f'<span style="color:{colour};border:1px solid {colour}55;background:{colour}14;border-radius:999px;'
+            f'padding:.1rem .55rem;font-size:.8rem;font-weight:600;white-space:nowrap">{esc(text)}</span>')
+
+
 def pipeline(steps):
     """steps: list of (title, description). Numbered because it's a real sequence."""
     cards = "".join(

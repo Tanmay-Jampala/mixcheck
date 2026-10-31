@@ -1,8 +1,9 @@
 ```python
-def merge(intervals):
+def merge_intervals(intervals):
     if not intervals:
         return []
 
+    # Start prakara sort maadu
     intervals.sort(key=lambda x: x[0])
 
     merged = [intervals[0]]
@@ -11,7 +12,8 @@ def merge(intervals):
         prev_start, prev_end = merged[-1]
         curr_start, curr_end = current
 
-        if curr_start <= prev_end:
+        # Touch aadru overlap antha treat maadu (prev_end >= curr_start)
+        if prev_end >= curr_start:
             merged[-1][1] = max(prev_end, curr_end)
         else:
             merged.append(current)

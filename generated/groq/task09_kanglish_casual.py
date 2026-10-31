@@ -1,63 +1,57 @@
-**Python function – `count_words`**
+**Python ಫಂಕ್ಷನ್ – `count_words`**
 
 ```python
 def count_words(text: str) -> int:
     """
-    Return the number of words in *text*.
+    ನೀಡಲಾದ ಸ್ಟ್ರಿಂಗ್‌ನಲ್ಲಿ ಎಷ್ಟು ಪದಗಳಿವೆ ಎಂದು ಎಣಿಸುವ ಫಂಕ್ಷನ್.
 
-    • Words are separated by one or more spaces.
-    • Leading, trailing and consecutive spaces are ignored.
-    • An empty string (or a string that contains only spaces) returns 0.
+    - ಪದಗಳು ಖಾಲಿ ಜಾಗ (space) ಮೂಲಕ ಬೇರ್ಪಡಿಸಲಾಗುತ್ತದೆ.
+    - ಆರಂಭ, ಅಂತ್ಯ, ಮಧ್ಯದಲ್ಲಿ ಇರುವ ಹೆಚ್ಚುವರಿ ಖಾಲಿ ಜಾಗಗಳನ್ನು
+      ಪದಗಳೆಂದು ಪರಿಗಣಿಸಲಾಗುವುದಿಲ್ಲ.
+    - ಯಾವುದೇ whitespace (space, tab, newline) ಗಳನ್ನು ಸಹ
+      ಒಂದೇ ಪ್ರಕಾರವಾಗಿ ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ.
 
     Parameters
     ----------
     text : str
-        The input string.
+        ಪದಗಳನ್ನು ಎಣಿಸಬೇಕಾದ ಮೂಲ ಸ್ಟ್ರಿಂಗ್.
 
     Returns
     -------
     int
-        Number of words found.
+        ಸ್ಟ್ರಿಂಗ್‌ನಲ್ಲಿ ಇರುವ ಪದಗಳ ಸಂಖ್ಯೆ.
     """
-    # `split()` without an argument splits on any whitespace and
-    # automatically discards empty parts caused by extra spaces.
+    # str.split() ಅನ್ನು ಯಾವುದೇ whitespace ಮೇಲೆ ವಿಭಜಿಸುತ್ತದೆ,
+    # ಮತ್ತು ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್‌ಗಳನ್ನು (ಅತಿರೇಕ spaces) ತೆಗೆದುಹಾಕುತ್ತದೆ.
     words = text.split()
     return len(words)
 
 
-# -------------------------------------------------
-# Example usage
+# -----------------------------
+# ಉದಾಹರಣಾ ಬಳಕೆ (Test Cases)
+# -----------------------------
 if __name__ == "__main__":
     examples = [
-        "hello world",                     # 2
-        "  leading space",                 # 2
-        "trailing space   ",               # 2
-        "  multiple   spaces  inside  ",   # 3
+        "Hello world",                     # 2
+        "   leading spaces",               # 2
+        "trailing spaces   ",              # 2
+        "  multiple   spaces   inside  ",  # 3
         "",                                # 0
-        "    ",                            # 0
+        "   ",                             # 0
         "one",                             # 1
+        "line1\nline2\tline3",             # 3  (newline ಮತ್ತು tab ಕೂಡ whitespace)
     ]
 
     for s in examples:
-        print(f"'{s}' → {count_words(s)} word(s)")
+        print(f"'{s}' -> {count_words(s)} words")
 ```
 
-### How it works
-1. **`text.split()`**  
-   - When called **without an argument**, `split()` treats **any consecutive whitespace** (spaces, tabs, newlines) as a single separator.  
-   - It also **drops empty strings** that would appear because of leading, trailing, or multiple spaces.
+### ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ?
 
-2. The resulting list `words` contains only the actual words, so `len(words)` is the exact count.
+1. `text.split()`  
+   - ಯಾವುದೇ whitespace (space, `\t`, `\n` ಇತ್ಯಾದಿ) ಅನ್ನು ವಿಭಜಕವಾಗಿ ಬಳಸುತ್ತದೆ.  
+   - ನಿರಂತರ whitespace ಗಳನ್ನು ಒಂದೇ ಬಾರಿ ಪರಿಗಣಿಸಿ, ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್‌ಗಳನ್ನು (ಅತಿರೇಕ spaces) ತೆಗೆದುಹಾಕುತ್ತದೆ.  
 
-### Quick test in the REPL
+2. ಫಲಿತಾಂಶವಾಗಿ ದೊರೆಯುವ ಪಟ್ಟಿಯ (`words`) ಉದ್ದ (`len`) ಅನ್ನು ಹಿಂತಿರುಗಿಸುತ್ತೇವೆ – ಇದೇ ಪದಗಳ ಸಂಖ್ಯೆ.
 
-```python
->>> count_words("  python   is   fun  ")
-3
->>> count_words("")
-0
->>> count_words("single")
-1
-```
-
-Feel free to copy the function into your project; it works for any Unicode string and respects the usual definition of “words separated by spaces”.
+ಈ ಫಂಕ್ಷನ್‌ನ್ನು ನಿಮ್ಮ ಪ್ರಾಜೆಕ್ಟ್‌ನಲ್ಲಿ import ಮಾಡಿ, ಅಥವಾ ಮೇಲಿನ `if __name__ == "__main__":` ಭಾಗವನ್ನು ತೆಗೆದು, ನಿಮ್ಮ ಸ್ವಂತ ಪರೀಕ್ಷೆಗಳನ್ನು ಸೇರಿಸಬಹುದು. Happy coding! 🚀

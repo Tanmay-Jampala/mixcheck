@@ -1,88 +1,76 @@
-Sure!  
-Here’s a clean, efficient Python function that returns the **n‑th Fibonacci number** with the standard base cases
+Sure! Below is a clean, efficient Python implementation that returns the **n‑th Fibonacci number** with the standard base cases
 
 ```
 fibonacci(0) = 0
 fibonacci(1) = 1
 ```
 
-I’ll give you a few versions so you can pick the one that best fits your needs.
+I’ll give you two versions:
+
+1. **Iterative (O(n) time, O(1) space)** – best for large `n`.
+2. **Recursive with memoization (O(n) time, O(n) space)** – nice for learning.
 
 ---
 
-## 1️⃣ Iterative (fast & memory‑friendly)
+## 1️⃣ Iterative version (recommended)
 
 ```python
 def fibonacci(n: int) -> int:
-    """Return the n‑th Fibonacci number (0‑based)."""
+    """
+    Return the n-th Fibonacci number.
+    Uses an iterative approach – O(n) time, O(1) space.
+    """
     if n < 0:
         raise ValueError("n must be a non‑negative integer")
 
-    a, b = 0, 1          # f(0), f(1)
-    for _ in range(n):
-        a, b = b, a + b  # shift forward
-    return a
+    # Base cases
+    if n == 0:
+        return 0
+    if n == 1:
+        return 1
+
+    prev, curr = 0, 1          # F(0), F(1)
+    for _ in range(2, n + 1):
+        prev, curr = curr, prev + curr
+
+    return curr
 ```
 
-* **Time complexity:** `O(n)`  
-* **Space complexity:** `O(1)`  
+### Usage
+
+```python
+print(fibonacci(0))   # 0
+print(fibonacci(1))   # 1
+print(fibonacci(10))  # 55
+print(fibonacci(50))  # 12586269025
+```
 
 ---
 
-## 2️⃣ Recursive (simple but not efficient for large n)
+## 2️⃣ Recursive with memoization
 
 ```python
-def fibonacci_recursive(n: int) -> int:
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fibonacci_rec(n: int) -> int:
+    """
+    Recursive Fibonacci with memoization.
+    """
     if n < 0:
         raise ValueError("n must be a non‑negative integer")
     if n == 0:
         return 0
     if n == 1:
         return 1
-    return fibonacci_recursive(n - 1) + fibonacci_recursive(n - 2)
+    return fibonacci_rec(n - 1) + fibonacci_rec(n - 2)
 ```
 
-* **Time complexity:** `O(2^n)` – exponential, so use only for small `n`.  
-* **Space complexity:** `O(n)` due to recursion depth.
+This version is great for teaching recursion, but the iterative one is usually faster for very large `n`.
 
 ---
 
-## 3️⃣ Recursive with memoization (fast for many calls)
-
-```python
-from functools import lru_cache
-
-@lru_cache(maxsize=None)
-def fibonacci_memo(n: int) -> int:
-    if n < 0:
-        raise ValueError("n must be a non‑negative integer")
-    if n <= 1:
-        return n
-    return fibonacci_memo(n - 1) + fibonacci_memo(n - 2)
-```
-
-* **Time complexity:** `O(n)` after the first call.  
-* **Space complexity:** `O(n)` for the cache.
-
----
-
-## 4️⃣ Using Binet’s formula (closed‑form, but beware of floating‑point errors)
-
-```python
-import math
-
-def fibonacci_binet(n: int) -> int:
-    if n < 0:
-        raise ValueError("n must be a non‑negative integer")
-    phi = (1 + math.sqrt(5)) / 2
-    return round(phi**n / math.sqrt(5))
-```
-
-* Works well for `n` up to about 70–75 before floating‑point rounding errors creep in.
-
----
-
-### Quick test
+### Quick sanity check
 
 ```python
 for i in range(10):
@@ -106,13 +94,12 @@ Output:
 
 ---
 
-### Which one to use?
+### Bonus: Big‑integer support
 
-| Scenario | Recommended |
-|----------|-------------|
-| Small `n` (≤ 30) | Any version |
-| Large `n` (≤ 10⁶) | Iterative or memoized |
-| Many repeated calls | Memoized |
-| Need a single formula | Binet (but watch precision) |
+Python’s `int` type automatically handles arbitrarily large integers, so you can safely compute `fibonacci(1000)` or even `fibonacci(10000)` with the iterative version.
 
-Feel free to copy the snippet that best matches your use case. Happy coding!
+```python
+print(fibonacci(1000))  # 434665576869374564356885276750406258025646605173717804024817290895... (a 209‑digit number)
+```
+
+Happy coding! If you need any tweaks (e.g., modulo arithmetic, matrix exponentiation, etc.), just let me know.

@@ -1,0 +1,1 @@
+Create a Python function named **missing_number** that, given a list containing every number from 1 to n except one (the numbers may appear in any order), returns the missing number. Write the code.

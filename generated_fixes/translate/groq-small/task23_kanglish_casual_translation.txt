@@ -1,0 +1,1 @@
+Create a Python function named **grade_from_marks** that takes marks and returns a grade string: 90 to 100 "A", 75 to 89 "B", 60 to 74 "C", 40 to 59 "D", 0 to 39 "F", less than 0 or greater than 100 "Invalid". Write the code.

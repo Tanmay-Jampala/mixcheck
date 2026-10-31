@@ -146,7 +146,7 @@ gemini,task15,english_casual,5,5,True,,True
 gemini,task15,hinglish,5,5,True,,True
 gemini,task15,hinglish_casual,5,5,True,,True
 gemini,task15,hinglish_devanagari,5,5,True,,True
-gemini,task15,kanglish_casual,0,5,False,No function named 'missing_number' in the AI's code,True
+gemini,task15,kanglish_casual,5,5,True,,True
 gemini,task15,odia_casual,5,5,True,,True
 gemini,task15,tanglish_casual,5,5,True,,True
 gemini,task16,benglish,6,6,True,,True
@@ -216,7 +216,7 @@ gemini,task22,english_casual,5,5,True,,True
 gemini,task22,hinglish,5,5,True,,True
 gemini,task22,hinglish_casual,5,5,True,,True
 gemini,task22,hinglish_devanagari,5,5,True,,True
-gemini,task22,kanglish_casual,0,5,False,No function named 'merge_intervals' in the AI's code,True
+gemini,task22,kanglish_casual,5,5,True,,True
 gemini,task22,odia_casual,5,5,True,,True
 gemini,task22,tanglish_casual,0,5,False,No function named 'merge_intervals' in the AI's code,True
 gemini,task23,benglish,12,12,True,,True
@@ -396,7 +396,7 @@ groq,task15,english_casual,5,5,True,,True
 groq,task15,hinglish,5,5,True,,True
 groq,task15,hinglish_casual,5,5,True,,True
 groq,task15,hinglish_devanagari,5,5,True,,True
-groq,task15,kanglish_casual,0,5,False,"Crashed on input [[3, 1, 4]]: TypeError: missing_number() missing 1 required positional argument: 'n'",False
+groq,task15,kanglish_casual,5,5,True,,False
 groq,task15,odia_casual,5,5,True,,True
 groq,task15,tanglish_casual,5,5,True,,True
 groq,task16,benglish,2,6,False,Crashed on input [1000]: TypeError: unsupported operand type(s) for +: 'list_reverseiterator' and 'list',True
@@ -406,7 +406,7 @@ groq,task16,english_casual,6,6,True,,True
 groq,task16,hinglish,6,6,True,,True
 groq,task16,hinglish_casual,2,6,False,Crashed on input [1000]: TypeError: unsupported operand type(s) for +: 'list_reverseiterator' and 'list',True
 groq,task16,hinglish_devanagari,2,6,False,Crashed on input [1000]: TypeError: unsupported operand type(s) for +: 'list_reverseiterator' and 'list',True
-groq,task16,kanglish_casual,2,6,False,Crashed on input [1000]: TypeError: unsupported operand type(s) for +: 'list_reverseiterator' and 'list',False
+groq,task16,kanglish_casual,6,6,True,,False
 groq,task16,odia_casual,6,6,True,,True
 groq,task16,tanglish_casual,6,6,True,,True
 groq,task17,benglish,9,9,True,,True
@@ -466,7 +466,7 @@ groq,task22,english_casual,5,5,True,,True
 groq,task22,hinglish,5,5,True,,True
 groq,task22,hinglish_casual,5,5,True,,True
 groq,task22,hinglish_devanagari,5,5,True,,True
-groq,task22,kanglish_casual,1,5,False,,False
+groq,task22,kanglish_casual,5,5,True,,False
 groq,task22,odia_casual,5,5,True,,True
 groq,task22,tanglish_casual,5,5,True,,True
 groq,task23,benglish,12,12,True,,True

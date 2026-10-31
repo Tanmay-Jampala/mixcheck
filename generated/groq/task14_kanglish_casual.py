@@ -1,53 +1,35 @@
-**Python‑ನಲ್ಲಿ `are_anagrams` ಫಂಕ್ಷನ್**
+**Python function – `are_anagrams`**
 
 ```python
 def are_anagrams(word1: str, word2: str) -> bool:
     """
-    ಎರಡು lowercase ಪದಗಳು (word1, word2) ಅನ್‌ಗ್ರಾಮ್‌ಗಳೇ ಎಂದು ಪರಿಶೀಲಿಸುತ್ತದೆ.
-    - ಅನ್‌ಗ್ರಾಮ್ ಎಂದರೆ: ಎರಡೂ ಪದಗಳಲ್ಲಿರುವ ಪ್ರತಿ ಅಕ್ಷರದ ಸಂಖ್ಯೆಯು ಒಂದೇ ಆಗಿರಬೇಕು.
-    - ಎರಡೂ ಇನ್‌ಪುಟ್‌ಗಳು lowercase ಆಗಿರಬೇಕು (ಅಗತ್ಯವಿದ್ದರೆ .lower() ಬಳಸಿ).
-
-    Returns
-    -------
-    bool
-        True  – ಪದಗಳು ಅನ್‌ಗ್ರಾಮ್ ಆಗಿದ್ದರೆ
-        False – ಇಲ್ಲದಿದ್ದರೆ
+    Return True if `word1` and `word2` are anagrams of each other.
+    Both arguments must be lowercase alphabetic strings.
     """
-    # ಬೇಗನೆ ಹೋಲಿಕೆ ಮಾಡಲು Counter (ಅಕ್ಷರಗಳ ಎಣಿಕೆ) ಬಳಸುತ್ತೇವೆ
+    # Quick length check – if lengths differ they cannot be anagrams
+    if len(word1) != len(word2):
+        return False
+
+    # Count the occurrences of each character in both words
+    # Using `collections.Counter` is concise and O(n)
     from collections import Counter
-
-    # Counter ಪ್ರತಿ ಪದದ ಅಕ್ಷರಗಳ ಸಂಖ್ಯೆಯನ್ನು ನೀಡುತ್ತದೆ
     return Counter(word1) == Counter(word2)
-
-
-# -------------------------------------------------
-# ಉದಾಹರಣಾ ಬಳಕೆ
-if __name__ == "__main__":
-    tests = [
-        ("listen", "silent"),   # True
-        ("triangle", "integral"), # True
-        ("apple", "papel"),     # True
-        ("hello", "world"),     # False
-        ("abcd", "abcde"),      # False
-    ]
-
-    for w1, w2 in tests:
-        print(f"{w1!r} , {w2!r} -> {are_anagrams(w1, w2)}")
 ```
 
 ### ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ?
 
-1. `collections.Counter` ಅನ್ನು ಇಂಪೋರ್ಟ್ ಮಾಡುತ್ತೇವೆ.  
-   - `Counter(word)` → ಪದದ ಪ್ರತಿ ಅಕ್ಷರ ಎಷ್ಟು ಬಾರಿ ಬರುತ್ತದೆ ಎಂಬ ಡಿಕ್ಷನರಿ (ಉದಾ: `{'l':1, 'i':1, ...}`).
+1. **ಲಂಬೈ (length) ಪರಿಶೀಲನೆ** – ಎರಡು ಪದಗಳ ಉದ್ದ ಒಂದೇ ಇಲ್ಲದಿದ್ದರೆ, ತಕ್ಷಣ `False` ಹಿಂತಿರುಗುತ್ತದೆ.  
+2. **ಅಕ್ಷರಗಳ ಎಣಿಕೆ** – `collections.Counter` ಪ್ರತಿ ಅಕ್ಷರ ಎಷ್ಟು ಬಾರಿ ಬರುತ್ತದೆ ಎಂಬುದನ್ನು ಡಿಕ್ಷನರಿ‑ರೀತಿ ಸಂಗ್ರಹಿಸುತ್ತದೆ.  
+3. **ಸಮಾನತೆ ಹೋಲಿಕೆ** – ಎರಡೂ ಕೌಂಟರ್‌ಗಳು ಒಂದೇ ಆಗಿದ್ದರೆ, ಅಂದರೆ ಪ್ರತಿ ಅಕ್ಷರವೂ ಒಂದೇ ಸಂಖ್ಯೆಯಲ್ಲಿ ಇದೆ → `True`; ಇಲ್ಲದಿದ್ದರೆ `False`.
 
-2. ಎರಡು ಪದಗಳ `Counter` ಗಳನ್ನು ಹೋಲಿಸುತ್ತೇವೆ.  
-   - ಅವು ಸಮಾನವಾಗಿದ್ದರೆ, ಅಕ್ಷರಗಳ ಸಮೂಹ ಮತ್ತು ಅವುಗಳ ಸಂಖ್ಯೆಗಳು ಒಂದೇ ಆಗಿರುತ್ತದೆ → **ಅನ್‌ಗ್ರಾಮ್** → `True`.  
-   - ಇಲ್ಲದಿದ್ದರೆ → `False`.
+### ಉದಾಹರಣೆ ಬಳಕೆ
 
-### ಗಮನಿಸಬೇಕಾದ ವಿಷಯಗಳು
+```python
+print(are_anagrams("listen", "silent"))   # True
+print(are_anagrams("triangle", "integral"))  # True
+print(are_anagrams("apple", "papel"))    # True
+print(are_anagrams("hello", "world"))    # False
+print(are_anagrams("abc", "ab"))         # False   (ಉದ್ದ ಬೇರೆ)
+```
 
-- ಫಂಕ್ಷನ್‌ವು **lowercase** ಪದಗಳಿಗಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾಗಿದೆ.  
-  ಬೇರೆ ಕೇಸ್‌ಗಳಲ್ಲಿ ಬಳಸಬೇಕಾದರೆ `word1 = word1.lower(); word2 = word2.lower()` ಎಂದು ಮೊದಲೇ ಪರಿವರ್ತಿಸಬಹುದು.
-- ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್‌ಗಳು (`""`) ಕೂಡ ಅನ್‌ಗ್ರಾಮ್‌ಗಳೆಂದು ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ (ಎರಡೂ ಖಾಲಿ ಇದ್ದರೆ `True`).  
-
-ಈ ಫಂಕ್ಷನ್‌ನ್ನು ನಿಮ್ಮ ಪ್ರಾಜೆಕ್ಟ್‌ನಲ್ಲಿ ನೇರವಾಗಿ ಬಳಸಬಹುದು!
+> **ಗಮನಿಸಿ:** ಈ ಫಂಕ್ಷನ್ ಇನ್‌ಪುಟ್‌ಗಳು ಕೇವಲ ಇಂಗ್ಲೀಷ್ ಅಕ್ಷರಗಳ (a‑z) ಚಿಕ್ಕ ಅಕ್ಷರಗಳೇ ಎಂದು ಊಹಿಸುತ್ತದೆ. ಬೇರೆ ಅಕ್ಷರಗಳು, ಖಾಲಿ ಜಾಗ, ಅಥವಾ ವಿಶೇಷ ಚಿಹ್ನೆಗಳು ಇದ್ದರೆ, ಅವುಗಳನ್ನು ಮೊದಲೇ ಸ್ವಚ್ಛಗೊಳಿಸಬೇಕು.

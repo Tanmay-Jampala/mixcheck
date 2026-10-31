@@ -1,0 +1,1 @@
+In python, write a function sum_even_numbers that returns the total of all even numbers in an integers list; if there is no even number, return 0. Provide the code.

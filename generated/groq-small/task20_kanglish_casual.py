@@ -1,76 +1,77 @@
-**Python‑ನಲ್ಲಿ “Run‑Length Encoding” (RLE) – ಒಂದು ಸರಳ ಸಂಕ್ಷಿಪ್ತ ಫಂಕ್ಷನ್**
+**Python‑ನಲ್ಲಿ “compress” ಫಂಕ್ಷನ್ (ಒಂದೇ ಅಕ್ಷರಗಳು ಪುನರಾವರ್ತಿಸಿದರೆ ಅಕ್ಷರ + ಎಷ್ಟು ಸಲ ಎಂದು, ಒಂದೇ ಸಲ ಬಂದರೆ ಅಕ್ಷರ ಮಾತ್ರ)**
 
 ```python
 def compress(s: str) -> str:
     """
-    ಕೊಟ್ಟಿರುವ ಸ್ಟ್ರಿಂಗ್ ಅನ್ನು ಸಂಕ್ಷಿಪ್ತಗೊಳಿಸುತ್ತದೆ.
+    ಕೊಟ್ಟಿರುವ ಸ್ಟ್ರಿಂಗ್ s ಅನ್ನು ಸಂಕುಚಿತಗೊಳಿಸಿ.
 
-    * ಒಂದೇ ಅಕ್ಷರವು ನಿರಂತರವಾಗಿ ಪುನರಾವರ್ತಿಸಿದರೆ:  
-      ಅಕ್ಷರ + ಎಷ್ಟು ಬಾರಿ ಬಂದಿದೆ ಎಂಬ ಸಂಖ್ಯೆ
-    * ಅಕ್ಷರವು ಒಂದೇ ಬಾರಿ ಬಂದರೆ:  
-      ಅಕ್ಷರ ಮಾತ್ರ (ಸಂಖ್ಯೆ ಬರೆಯುವುದಿಲ್ಲ)
+    - ಒಂದೇ ಅಕ್ಷರವು ನಿರಂತರವಾಗಿ ಪುನರಾವರ್ತಿಸಿದರೆ:  ಅಕ್ಷರ + ಪುನರಾವರ್ತನೆಯ ಸಂಖ್ಯೆ
+    - ಅಕ್ಷರವು ಒಂದೇ ಸಲ ಬಂದರೆ:  ಅಕ್ಷರ ಮಾತ್ರ (ಸಂಖ್ಯೆ ಬರೆಯುವುದಿಲ್ಲ)
 
     ಉದಾಹರಣೆ:
-        compress("aaabbc")   ->  "a3b2c"
-        compress("abcd")     ->  "abcd"
-        compress("")         ->  ""
+        compress('aaabbc')  ->  'a3b2c'
+        compress('abc')     ->  'abc'
     """
-    if not s:                     # ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್‌ಗಾಗಿ
+    if not s:                     # ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್
         return ""
 
-    result = []                   # ಫಲಿತಾಂಶವನ್ನು ಪಟ್ಟಿಯಲ್ಲಿ ಸಂಗ್ರಹಿಸಿ
+    result = []                   # ಫಲಿತಾಂಶವನ್ನು ಪಟ್ಟಿಯಾಗಿ ಸಂಗ್ರಹಿಸಿ
     count = 1                     # ಪ್ರಸ್ತುತ ಅಕ್ಷರದ ಎಣಿಕೆ
-    prev = s[0]                   # ಹಿಂದಿನ ಅಕ್ಷರ
 
-    for ch in s[1:]:
-        if ch == prev:            # ಅದೇ ಅಕ್ಷರ ಬಂದರೆ ಎಣಿಕೆ ಹೆಚ್ಚಿಸಿ
+    for i in range(1, len(s)):
+        if s[i] == s[i - 1]:      # ಅದೇ ಅಕ್ಷರ ಮುಂದುವರಿದರೆ ಎಣಿಕೆ ಹೆಚ್ಚಿಸಿ
             count += 1
-        else:                     # ಬೇರೆ ಅಕ್ಷರ ಬಂದರೆ, ಹಿಂದಿನ ಅಕ್ಷರವನ್ನು ಬರೆಯಿರಿ
-            result.append(prev)
-            if count > 1:        # ಎಣಿಕೆ 1 ಕ್ಕಿಂತ ಹೆಚ್ಚಿದ್ದರೆ ಮಾತ್ರ ಸಂಖ್ಯೆ ಬರೆಯಿರಿ
+        else:                     # ಅಕ್ಷರ ಬದಲಾಗಿದೆ
+            result.append(s[i - 1])          # ಹಿಂದಿನ ಅಕ್ಷರ ಸೇರಿಸಿ
+            if count > 1:                    # 1 ಕ್ಕಿಂತ ಹೆಚ್ಚು ಇದ್ದರೆ ಸಂಖ್ಯೆ ಸೇರಿಸಿ
                 result.append(str(count))
-            prev = ch            # ಹೊಸ ಅಕ್ಷರಕ್ಕೆ ಬದಲಾಯಿಸಿ
-            count = 1            # ಎಣಿಕೆಯನ್ನು ಮರುಹೊಂದಿಸಿ
+            count = 1                         # ಎಣಿಕೆಯನ್ನು ಮರುಹೊಂದಿಸಿ
 
-    # ಕೊನೆಯ ಗುಂಪನ್ನು ಸೇರಿಸಿ
-    result.append(prev)
+    # ಕೊನೆಯ ಗುಂಪು
+    result.append(s[-1])
     if count > 1:
         result.append(str(count))
 
-    return "".join(result)
-```
-
-### ಬಳಕೆ ಉದಾಹರಣೆ
-
-```python
-print(compress("aaabbc"))   # -> a3b2c
-print(compress("abcd"))     # -> abcd
-print(compress("zzzzzzzz")) # -> z8
-print(compress("a"))        # -> a
-print(compress(""))         # -> (ಖಾಲಿ)
+    return ''.join(result)
 ```
 
 ---
 
-#### ಪರ್ಯಾಯ: `itertools.groupby` ಬಳಸಿ
+### `itertools.groupby` ಬಳಸಿ ಇನ್ನೂ ಸಂಕ್ಷಿಪ್ತವಾಗಿ
 
 ```python
 from itertools import groupby
 
-def compress_groupby(s: str) -> str:
-    return "".join(
-        f"{ch}{len(list(g)) if len(list(g)) > 1 else ''}"
+def compress(s: str) -> str:
+    return ''.join(
+        f"{ch}{len(list(g))}" if len(list(g)) > 1 else ch
         for ch, g in groupby(s)
     )
 ```
 
-`groupby` ಬಳಸಿ ಕೋಡ್ ಸ್ವಲ್ಪ ಚಿಕ್ಕದಾಗುತ್ತದೆ, ಆದರೆ `list(g)` ಅನ್ನು ಎರಡು ಬಾರಿ ಕರೆಸುವ ಕಾರಣದಿಂದ ದೊಡ್ಡ ಸ್ಟ್ರಿಂಗ್‌ಗಳಿಗೆ ಸ್ವಲ್ಪ ನಿಧಾನವಾಗಬಹುದು.  
+> **ಗಮನಿಸಿ**  
+> - `groupby` ಬಳಸುವಾಗ `list(g)` ಅನ್ನು ಎರಡು ಬಾರಿ ಬಳಸುವ ಕಾರಣದಿಂದ, ದೊಡ್ಡ ಸ್ಟ್ರಿಂಗ್‌ಗಳಿಗಾಗಿ ಇದು ಸ್ವಲ್ಪ ನಿಧಾನವಾಗಬಹುದು.  
+> - ಮೊದಲ ವಿಧಾನವು O(n) ಸಮಯ ಮತ್ತು O(1) ಹೆಚ್ಚುವರಿ ಸ್ಥಳ (ಫಲಿತಾಂಶ ಹೊರತುಪಡಿಸಿ) ಬಳಸುತ್ತದೆ.
 
 ---
 
-**ಸಾರಾಂಶ**  
-- ಒಂದೇ ಅಕ್ಷರ ನಿರಂತರವಾಗಿ ಬಂದರೆ: `ಅಕ್ಷರ + ಎಣಿಕೆ`  
-- ಒಂದೇ ಬಾರಿ ಬಂದರೆ: `ಅಕ್ಷರ` ಮಾತ್ರ  
-- ಖಾಲಿ ಸ್ಟ್ರಿಂಗ್‌ಗೆ ಖಾಲಿ ಫಲಿತಾಂಶ.  
+### ಪರೀಕ್ಷೆ
 
-ಇದು ನಿಮ್ಮ “compress” ಅಗತ್ಯವನ್ನು ಪೂರೈಸುತ್ತದೆ!
+```python
+tests = [
+    ("aaabbc", "a3b2c"),
+    ("abc", "abc"),
+    ("", ""),
+    ("a", "a"),
+    ("zzzzzz", "z6"),
+    ("aabbaa", "a2b2a2")
+]
+
+for inp, expected in tests:
+    out = compress(inp)
+    print(inp, "->", out, "|", "PASS" if out == expected else "FAIL")
+```
+
+ಎಲ್ಲಾ ಪರೀಕ್ಷೆಗಳು “PASS” ಆಗಿರಬೇಕು.  
+
+ಇದು ನಿಮ್ಮ ಅಗತ್ಯಕ್ಕೆ ಸರಿಹೊಂದುತ್ತದೆ ಎಂದು ಭಾವಿಸುತ್ತೇನೆ!

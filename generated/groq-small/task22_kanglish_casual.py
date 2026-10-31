@@ -1,56 +1,56 @@
-**Python function – `merge_intervals`**
+**Python – `merge_intervals`**
 
 ```python
-def merge_intervals(intervals):
+from typing import List, Tuple
+
+def merge_intervals(intervals: List[Tuple[int, int]]) -> List[List[int]]:
     """
     Merge a list of [start, end] intervals.
 
+    * Intervals that overlap **or touch** (e.g. [1, 3] and [3, 5]) are merged.
+    * The result is sorted by the start value.
+    * Empty input returns an empty list.
+
     Parameters
     ----------
-    intervals : list[list[int] | tuple[int, int]]
-        Each element is a 2‑item sequence where the first element is the
-        start of the interval and the second element is the end.
+    intervals : List[Tuple[int, int]]
+        List of intervals where each interval is a pair (start, end).
 
     Returns
     -------
-    list[list[int]]
-        A new list of merged intervals sorted by start value.
-        Intervals that *touch* (e.g. [1, 3] and [3, 5]) are treated as
-        overlapping and are merged into a single interval.
-
-    Notes
-    -----
-    * The input list is **not** modified.
-    * Intervals are assumed to be closed: [start, end] includes both
-      endpoints.
+    List[List[int]]
+        Merged, sorted list of intervals.
     """
     if not intervals:
         return []
 
-    # Make a shallow copy so we don't mutate the caller's data
-    sorted_ints = sorted((list(iv) for iv in intervals), key=lambda x: x[0])
+    # 1. Sort by the start value
+    intervals.sort(key=lambda x: x[0])
 
-    merged = [sorted_ints[0]]
-    for cur_start, cur_end in sorted_ints[1:]:
-        last_start, last_end = merged[-1]
+    merged: List[List[int]] = []
+    cur_start, cur_end = intervals[0]
 
-        # If the current interval starts before or exactly at the end
-        # of the last merged interval, they overlap/touch.
-        if cur_start <= last_end:
-            # Extend the last interval if needed
-            merged[-1][1] = max(last_end, cur_end)
+    for start, end in intervals[1:]:
+        # 2. If the next interval starts before or exactly at the end
+        #    of the current one, merge them.
+        if start <= cur_end:          # overlap or touch
+            cur_end = max(cur_end, end)
         else:
+            # 3. No overlap – push the current interval and start a new one
             merged.append([cur_start, cur_end])
+            cur_start, cur_end = start, end
 
+    # 4. Append the last interval
+    merged.append([cur_start, cur_end])
     return merged
 ```
 
-### Quick example
+### Example usage
 
 ```python
->>> intervals = [[1, 3], [2, 6], [8, 10], [9, 12]]
->>> merge_intervals(intervals)
-[[1, 6], [8, 12]]
+intervals = [[1, 3], [2, 6], [8, 10], [9, 12]]
+print(merge_intervals(intervals))
+# Output: [[1, 6], [8, 12]]
 ```
 
-The function first sorts the intervals by their start value, then iteratively merges any that overlap or touch. The result is a list of non‑overlapping, sorted intervals.
+The function works for any list of integer intervals, correctly handling overlapping, touching, and disjoint intervals.

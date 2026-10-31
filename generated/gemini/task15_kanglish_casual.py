@@ -1,5 +1,5 @@
 ```python
-def find_missing_number(arr):
+def missing_number(arr):
     n = len(arr) + 1
-    return (n * (n + 1)) // 2 - sum(arr)
+    return (n * (n + 1) // 2) - sum(arr)
 ```

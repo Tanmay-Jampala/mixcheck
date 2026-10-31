@@ -1,0 +1,1 @@
+are_anagrams function in Python, takes two lowercase words, if they contain the same letters the same number of times return True else False. Provide code.

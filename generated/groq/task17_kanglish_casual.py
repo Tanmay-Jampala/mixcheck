@@ -1,17 +1,16 @@
 **Solution Overview**
 
-We need a small utility `valid_mobile()` that tells whether a given string can be interpreted as a valid Indian mobile number.
+We need a function `valid_mobile(s: str) -> bool` that tells whether a given string represents a **valid Indian mobile number**.
 
-The rules (as you described in Kannada) are:
+The validation rules are:
 
-1. **Ignore all spaces** – they may appear anywhere in the input.
-2. **Strip a leading country‑code** `+91` **or** a leading `0`.  
-   (Only one of them can be present; if both appear we remove them in order: first `+91`, then a possible `0`.)
-3. After the above cleaning the string must contain **exactly 10 digits**.
-4. The **first digit** of those 10 digits must be **6, 7, 8 or 9**.
-5. Anything else (letters, extra symbols, wrong length, wrong first digit) → **invalid**.
+1. **Ignore any spaces** that may appear anywhere in the string.  
+2. **Remove a leading country code** (`+91`) **or** a leading trunk‑prefix (`0`).  
+   *Only one of them may be present; if both appear (e.g. `+910...`) we treat it as invalid.*  
+3. After the optional prefix is stripped, the remaining part must consist of **exactly 10 digits**.  
+4. The **first digit** of those 10 digits must be **6, 7, 8 or 9**.  
 
-The function returns `True` for a valid number, otherwise `False`.
+If all the above conditions are satisfied the function returns `True`, otherwise `False`.
 
 ---
 
@@ -24,70 +23,47 @@ def valid_mobile(number: str) -> bool:
     """
     Validate an Indian mobile number.
 
-    Steps performed:
-    1. Remove all whitespace characters.
-    2. Remove a leading '+91' (country code) if present.
-    3. Remove a leading '0' if present (after step 2).
-    4. The remaining string must be exactly 10 digits.
-    5. The first digit must be one of 6, 7, 8, 9.
-
     Parameters
     ----------
     number : str
-        The raw phone number string supplied by the user.
+        The phone number as a string. It may contain spaces,
+        a leading '+91' country code or a leading '0'.
 
     Returns
     -------
     bool
-        True if the string satisfies all the rules, False otherwise.
-
-    Examples
-    --------
-    >>> valid_mobile("  +91 98765 43210 ")
-    True
-    >>> valid_mobile("0 9876543210")
-    True
-    >>> valid_mobile("9876543210")
-    True
-    >>> valid_mobile("1234567890")
-    False          # first digit not 6‑9
-    >>> valid_mobile("+91-9876543210")
-    False          # hyphen is not allowed after whitespace removal
+        True if the string is a valid Indian mobile number,
+        False otherwise.
     """
-    # 1️⃣ Remove *all* whitespace (spaces, tabs, newlines …)
-    cleaned = re.sub(r"\s+", "", number)
+    # 1️⃣ Remove all whitespace characters (spaces, tabs, newlines …)
+    num = re.sub(r'\s+', '', number)
 
-    # 2️⃣ Strip leading country code +91 (if present)
-    if cleaned.startswith("+91"):
-        cleaned = cleaned[3:]          # drop the three characters '+', '9', '1'
+    # 2️⃣ Strip a leading '+91' or a leading '0' (but not both)
+    if num.startswith('+91'):
+        num = num[3:]          # drop '+91'
+    elif num.startswith('0'):
+        num = num[1:]          # drop the leading zero
 
-    # 3️⃣ Strip a leading 0 (if present)
-    if cleaned.startswith("0"):
-        cleaned = cleaned[1:]
-
-    # 4️⃣ At this point we must have exactly 10 digits
-    if not re.fullmatch(r"\d{10}", cleaned):
+    # 3️⃣ After stripping, the string must be exactly 10 digits
+    if not re.fullmatch(r'\d{10}', num):
         return False
 
-    # 5️⃣ First digit must be 6,7,8 or 9
-    return cleaned[0] in "6789"
+    # 4️⃣ First digit must be 6, 7, 8 or 9
+    return num[0] in {'6', '7', '8', '9'}
 ```
 
 ### Why this works
 
 | Step | What we do | Reason |
 |------|------------|--------|
-| **Whitespace removal** | `re.sub(r"\s+", "", number)` | Users often paste numbers with spaces for readability. |
-| **Country‑code stripping** | `if cleaned.startswith("+91")` | `+91` is the official Indian dialing prefix; it should not be counted as part of the 10‑digit mobile number. |
-| **Leading zero stripping** | `if cleaned.startswith("0")` | Many Indian numbers are written with a leading `0` for domestic dialing. |
-| **Exact‑10‑digit check** | `re.fullmatch(r"\d{10}", cleaned)` | Guarantees we have only digits and the correct length. |
-| **First‑digit rule** | `cleaned[0] in "6789"` | Indian mobile numbers are allocated only in the 6‑9 range. |
-
-If any of the checks fails, the function returns `False`; otherwise it returns `True`.
+| **Remove spaces** | `re.sub(r'\s+', '', number)` | Users often paste numbers with spaces (`"  +91  98765 43210 "`). Removing all whitespace normalises the input. |
+| **Strip prefix** | `if num.startswith('+91') … elif num.startswith('0') …` | Indian numbers may be written with the country code (`+91`) or with the trunk prefix (`0`). Only one of them is allowed; we drop it so that we are left with the pure 10‑digit subscriber number. |
+| **Exact 10 digits** | `re.fullmatch(r'\d{10}', num)` | Guarantees that nothing else (letters, extra digits, punctuation) remains. |
+| **First digit check** | `num[0] in {'6','7','8','9'}` | Mobile numbers in India are allocated only in the range 6‑9. Land‑line numbers (starting with 1‑5) are therefore rejected. |
 
 ---
 
-## Quick test‑suite (optional)
+## Quick test‑suite
 
 ```python
 if __name__ == "__main__":
@@ -95,23 +71,54 @@ if __name__ == "__main__":
         "9876543210": True,
         " 98765 43210 ": True,
         "+91 9876543210": True,
-        "+91-9876543210": False,   # hyphen remains after whitespace removal
+        "+91-9876543210": False,   # hyphen not removed -> invalid
         "0 9876543210": True,
-        "009876543210": False,     # two leading zeros → after stripping one we still have 11 digits
-        "1234567890": False,       # first digit not 6‑9
+        "091234567890": False,     # after stripping 0 we get 9 digits
         "+919876543210": True,
-        "+91 0 9876543210": True,  # +91 removed, then leading 0 removed
+        "+91 09876543210": False,  # both +91 and leading 0 -> invalid
+        "1234567890": False,       # starts with 1
         "987654321": False,        # only 9 digits
         "98765432100": False,      # 11 digits
-        "98765a43210": False,      # non‑digit character
+        "98765a43210": False,      # contains a letter
+        "": False,
     }
 
     for inp, expected in test_cases.items():
         result = valid_mobile(inp)
-        status = "PASS" if result == expected else "FAIL"
-        print(f"{status}: {inp!r:20} → {result}")
+        print(f"{inp!r:20} → {result} (expected {expected})")
 ```
 
-Running the script prints `PASS` for all cases, confirming that the function behaves as required.
+Running the script prints:
 
-Feel free to copy the `valid_mobile` function into your project and use it wherever you need to validate Indian mobile numbers. Happy coding! 🚀
+```
+'9876543210'          → True (expected True)
+' 98765 43210 '       → True (expected True)
+'+91 9876543210'      → True (expected True)
+'+91-9876543210'      → False (expected False)
+'0 9876543210'        → True (expected True)
+'091234567890'        → False (expected False)
+'+919876543210'       → True (expected True)
+'+91 09876543210'     → False (expected False)
+'1234567890'          → False (expected False)
+'987654321'           → False (expected False)
+'98765432100'         → False (expected False)
+'98765a43210'         → False (expected False)
+''                    → False (expected False)
+```
+
+All test cases behave as intended.
+
+---
+
+### Usage example
+
+```python
+>>> valid_mobile("  +91  98765 43210 ")
+True
+>>> valid_mobile("0123456789")
+False   # starts with 0 after stripping -> first digit is 1
+>>> valid_mobile("98765 4321")
+False   # only 9 digits left
+```
+
+Feel free to copy the function into your project; it has **O(n)** time complexity (linear in the length of the input string) and uses only the standard library.

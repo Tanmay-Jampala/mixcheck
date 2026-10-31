@@ -1,0 +1,1 @@
+sort_words is a python function. It takes a sentence (single space, no punctuation). Return unique words in lowercase. Sort by length ascending first, if same length then alphabetical. If a word has both capital and small letters, treat it as one word. If sentence is empty return empty list. Write code.

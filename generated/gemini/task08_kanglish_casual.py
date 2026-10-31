@@ -1,10 +1,13 @@
 ```python
-def second_largest(nums):
-    if len(nums) < 2:
+def second_largest(numbers):
+    if not numbers or len(numbers) < 2:
         return None
-    unique_nums = list(set(nums))
-    if len(unique_nums) < 2:
+
+    unique_numbers = list(set(numbers))
+
+    if len(unique_numbers) < 2:
         return None
-    unique_nums.sort()
-    return unique_nums[-2]
+
+    unique_numbers.sort()
+    return unique_numbers[-2]
 ```

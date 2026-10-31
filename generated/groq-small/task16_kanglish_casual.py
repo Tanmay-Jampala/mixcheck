@@ -1,76 +1,80 @@
-**Python – Indian‑style number formatter**
+**Python ಫಂಕ್ಷನ್ – `indian_format`**
 
 ```python
-def indian_format(n: int) -> str:
+def indian_format(n: int | float) -> str:
     """
-    Return a string representation of a non‑negative integer `n`
-    formatted with Indian‑style commas.
+    Non‑negative number `n` ಅನ್ನು ಭಾರತೀಯ ಕಾಮಾ ಶೈಲಿಯಲ್ಲಿ ಸ್ಟ್ರಿಂಗ್ ಆಗಿ ಹಿಂತಿರುಗಿಸುತ್ತದೆ.
 
-    Indian grouping rules:
-        • The last three digits form the first group.
-        • All preceding digits are grouped in pairs (2‑digit groups).
-        • Numbers < 1000 are returned unchanged (no comma).
+    * ಕೊನೆಯ 3 ಅಂಕಿಗಳನ್ನು ಒಂದು ಗುಂಪು (thousands)
+    * ಅದಕ್ಕೂ ಮುಂಚಿನ ಅಂಕಿಗಳನ್ನು 2‑2 ಅಂಕಿಗಳ ಗುಂಪುಗಳಾಗಿ ವಿಭಜಿಸಲಾಗುತ್ತದೆ
+    * 1000 ಕಿಂತ ಕಡಿಮೆ ಸಂಖ್ಯೆಗೆ ಕಾಮಾ ಇರದು
 
     Parameters
     ----------
-    n : int
-        Non‑negative integer to format.
+    n : int | float
+        ಧನಾತ್ಮಕ (ಅಥವಾ ಶೂನ್ಯ) ಸಂಖ್ಯೆ.  (float ಇದ್ದರೆ, ದಶಾಂಶ ಭಾಗವನ್ನು ಉಳಿಸಲಾಗುತ್ತದೆ)
 
     Returns
     -------
     str
-        The formatted number.
-
-    Raises
-    ------
-    ValueError
-        If `n` is negative.
+        ಭಾರತೀಯ ಕಾಮಾ ಶೈಲಿಯ ಸ್ಟ್ರಿಂಗ್
 
     Examples
     --------
-    >>> indian_format(0)
-    '0'
-    >>> indian_format(999)
-    '999'
-    >>> indian_format(1000)
-    '1,000'
-    >>> indian_format(12345)
-    '12,345'
+    >>> indian_format(123)
+    '123'
+    >>> indian_format(1234)
+    '1,234'
     >>> indian_format(123456)
     '1,23,456'
-    >>> indian_format(1234567)
-    '12,34,567'
     >>> indian_format(123456789)
     '12,34,56,789'
+    >>> indian_format(1234567.89)
+    '12,34,567.89'
     """
-    if n < 0:
-        raise ValueError("Only non‑negative numbers are allowed")
+    # 1.  float ಇದ್ದರೆ, integer ಭಾಗ ಮತ್ತು fractional ಭಾಗವನ್ನು ಬೇರ್ಪಡಿಸಿ
+    if isinstance(n, float):
+        int_part, frac_part = str(n).split('.')
+        int_part = int_part.lstrip('0') or '0'   # 0.001 → '0'
+        formatted_int = _format_int_part(int_part)
+        return f"{formatted_int}.{frac_part}"
+    else:
+        return _format_int_part(str(n))
 
-    s = str(n)
-
-    # No comma needed for numbers with 3 or fewer digits
+def _format_int_part(s: str) -> str:
+    """ಸಂಖ್ಯೆಯ ಪೂರ್ಣಾಂಕ ಭಾಗವನ್ನು ಭಾರತೀಯ ಕಾಮಾ ಶೈಲಿಯಲ್ಲಿ ಫಾರ್ಮ್ಯಾಟ್ ಮಾಡುವುದು."""
     if len(s) <= 3:
         return s
 
-    # Split into the last 3 digits and the remaining part
+    # ಕೊನೆಯ 3 ಅಂಕಿಗಳು
     last3 = s[-3:]
     rest = s[:-3]
 
-    # Group the remaining part in pairs from the right
-    rev_rest = rest[::-1]                     # reverse for easy chunking
-    pairs = [rev_rest[i:i + 2] for i in range(0, len(rev_rest), 2)]
+    # ಉಳಿದ ಅಂಕಿಗಳನ್ನು 2‑2 ಅಂಕಿಗಳ ಗುಂಪುಗಳಾಗಿ ವಿಭಜಿಸಿ
+    groups = []
+    while len(rest) > 2:
+        groups.append(rest[-2:])
+        rest = rest[:-2]
+    if rest:          # ಉಳಿದ ಅಂಕಿಗಳು 1 ಅಥವಾ 2
+        groups.append(rest)
 
-    # Reverse each pair back and join with commas
-    grouped_rest = ','.join(pair[::-1] for pair in pairs[::-1])
-
-    return f"{grouped_rest},{last3}"
+    # ಗುಂಪುಗಳನ್ನು ಸರಿಯಾದ ಕ್ರಮದಲ್ಲಿ ಜೋಡಿಸಿ
+    return ','.join(reversed(groups)) + ',' + last3
 ```
 
-### How it works
+### ವಿವರಣೆ
 
-1. **Short numbers** – If the number has 3 or fewer digits, it is returned as‑is.
-2. **Last three digits** – These are kept as the final group.
-3. **Remaining digits** – Reversed, split into 2‑digit chunks, then reversed back.
-4. **Join** – The 2‑digit groups are joined with commas, followed by the last‑3‑digit group.
+1. **ಇನ್‌ಪುಟ್ ಪರಿಶೀಲನೆ**  
+   - `float` ಇದ್ದರೆ, ಪೂರ್ಣಾಂಕ ಭಾಗ ಮತ್ತು ದಶಾಂಶ ಭಾಗವನ್ನು ಬೇರ್ಪಡಿಸಿ, ಪೂರ್ಣಾಂಕ ಭಾಗವನ್ನು ಪ್ರತ್ಯೇಕವಾಗಿ ಫಾರ್ಮ್ಯಾಟ್ ಮಾಡಿ, ನಂತರ ದಶಾಂಶ ಭಾಗವನ್ನು ಸೇರಿಸಿ.
 
-Feel free to copy‑paste the function into your project. It works for any non‑negative integer; if you need to support floats, split the integer and fractional parts separately and apply the same logic to the integer part.
+2. **ಪೂರ್ಣಾಂಕ ಭಾಗದ ಫಾರ್ಮ್ಯಾಟಿಂಗ್** (`_format_int_part`)  
+   - ಸಂಖ್ಯೆ 3 ಅಂಕಿಗಳಿಗಿಂತ ಕಡಿಮೆ ಇದ್ದರೆ, ಕಾಮಾ ಇಲ್ಲದೆ ಹಿಂತಿರುಗಿಸಿ.  
+   - ಇಲ್ಲದಿದ್ದರೆ, ಕೊನೆಯ 3 ಅಂಕಿಗಳನ್ನು `last3` ಎಂದು ತೆಗೆದುಕೊಳ್ಳಿ.  
+   - ಉಳಿದ ಅಂಕಿಗಳನ್ನು ಬಲದಿಂದ 2‑2 ಅಂಕಿಗಳ ಗುಂಪುಗಳಾಗಿ ವಿಭಜಿಸಿ (`groups`).  
+   - ಗುಂಪುಗಳನ್ನು ಹಿಮ್ಮುಖವಾಗಿ ಜೋಡಿಸಿ, ಕೊನೆಯಲ್ಲಿ `last3` ಅನ್ನು ಸೇರಿಸಿ.
+
+3. **ಫಲಿತಾಂಶ**  
+   - 1000 ಕಿಂತ ಕಡಿಮೆ ಸಂಖ್ಯೆಗೆ ಕಾಮಾ ಇಲ್ಲ.  
+   - 1000 ಮತ್ತು ಅದಕ್ಕಿಂತ ಹೆಚ್ಚಿನ ಸಂಖ್ಯೆಗೆ ಭಾರತೀಯ ಕಾಮಾ ಶೈಲಿ ಅನ್ವಯಿಸುತ್ತದೆ.
+
+ಈ ಫಂಕ್ಷನ್ ಸರಳ, ಓದಲು ಸುಲಭ, ಮತ್ತು ಯಾವುದೇ ಪೂರ್ಣಾಂಕ ಅಥವಾ ದಶಾಂಶ ಸಂಖ್ಯೆಯನ್ನು ಭಾರತೀಯ ಕಾಮಾ ಶೈಲಿಯಲ್ಲಿ ಸ್ಟ್ರಿಂಗ್ ಆಗಿ ಪರಿವರ್ತಿಸುತ್ತದೆ.

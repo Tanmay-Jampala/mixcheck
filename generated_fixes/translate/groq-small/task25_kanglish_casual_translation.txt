@@ -1,0 +1,1 @@
+I need a Python function called **running_balance** that takes a list of transactions like “+500” or “-200” and a starting balance. After each transaction, return the balance in a list. If any withdrawal causes the balance to go below zero, skip that transaction (if the balance stays the same, still add it to the list). Provide the code.

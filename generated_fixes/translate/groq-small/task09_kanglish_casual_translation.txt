@@ -1,0 +1,1 @@
+count_words is a python function, tell me how many words are in the string, words are separated by spaces, do not consider leading/trailing/middle extra spaces as words. Provide the code.

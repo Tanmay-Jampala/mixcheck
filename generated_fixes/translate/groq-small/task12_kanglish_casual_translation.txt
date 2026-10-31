@@ -1,0 +1,1 @@
+Python fn capitalize_words bari, sentence fully lowercase, words separated by a single space, capitalize the first letter of each word and return. bari code

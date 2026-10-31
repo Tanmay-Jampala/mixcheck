@@ -1,0 +1,1 @@
+Python function `capitalize_words`: given a sentence, convert it to lowercase, ensure there is a single space between words, capitalize the first letter of each word, and return it. Write the code.

@@ -1,4 +1,4 @@
 ```python
 def count_words(s):
-    return len(s.strip().split())
+    return len(s.split())
 ```

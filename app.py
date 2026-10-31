@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
 
+import stats
 import ui
 import widgets
 from grade import extract_code, followed_format, grade, strip_fences
@@ -144,6 +145,27 @@ def dial_data(_results_len):
     }
 
 
+def make_report(results, code_rows, fmt_rows, board):
+    """A short shareable summary of the results, as Markdown."""
+    lines = ["# MixCheck report", "",
+             f"{len(results)} answers graded by running the code: {results['task_id'].nunique()} tasks, "
+             f"{results['language'].nunique()} ways of asking, {results['model'].nunique()} models.", "",
+             f"- Correct code overall: {100 * results['passed_all'].mean():.1f}%",
+             f"- Replied with only code, as asked: {100 * results['followed_format'].mean():.1f}%", "",
+             "## Models", "", "| Model | Correct code | Only code | Weakest way of asking |", "|---|---|---|---|"]
+    for c, f_, m, w in board:
+        lines.append(f"| {MODELS.get(m, m)} ({exact_model_id(m) or m}) | {100 * c:.1f}% | {100 * f_:.1f}% | {VERSIONS.get(w, w)} |")
+    lines += ["", "## Against English in the same style", "",
+              "| Way of asking | Correct code | p | Only code | p |", "|---|---|---|---|---|"]
+    for r in code_rows:
+        f_ = fmt_rows.get(r["version"])
+        lines.append(f"| {VERSIONS.get(r['version'], r['version'])} | {100 * r['rate']:.1f}% | {r['p']:.3g} | "
+                     f"{100 * f_['rate']:.1f}% | {f_['p']:.3g} |" if f_ else "")
+    lines += ["", "p = Fisher's exact test, two-sided. Below 0.05 = unlikely to be chance.", "",
+              "Made with MixCheck by Team El Rata Alada."]
+    return "\n".join(lines)
+
+
 components.html(widgets.mix_dial(dial_data(len(results))), height=820, scrolling=True)
 
 tab_results, tab_game, tab_failures, tab_live, tab_how = st.tabs(
@@ -245,6 +267,121 @@ with tab_results:
                        for m in pivot.index]
         pivot.columns = [VERSIONS.get(v, v) for v in pivot.columns]
         st.dataframe(pivot.style.format("{:.1f}%"), width="stretch")
+
+    # ---- Statistics: which gaps are real? ----
+    ui.section("Is the gap real, or could it be chance?",
+               "Each way of asking against English in the same style (casual vs casual, formal vs formal), "
+               "all 3 models together. The range is a 95% confidence range. p is Fisher's exact test: "
+               "the chance of a gap at least this big if the language made no difference.")
+
+    def english_for(v):
+        if v.startswith("english"):
+            return None
+        return "english_casual" if v.endswith("casual") else "english"
+
+    code_rows = stats.compare(results, "passed_all", versions, english_for)
+    fmt_rows = {r["version"]: r for r in stats.compare(results, "followed_format", versions, english_for)}
+
+    def pct(r):
+        return f'{100 * r["rate"]:.0f}% <span style="color:{ui.T["faint"]}">({100 * r["lo"]:.0f}–{100 * r["hi"]:.0f})</span>'
+
+    def pval(p):
+        return "&lt; 0.001" if p < 0.001 else f"{p:.2f}"
+
+    def verdict_tag(r):
+        if r["p"] >= 0.05:
+            return ui.tag("could be chance", "muted")
+        return ui.tag("real drop", "fail") if r["rate"] < r["base_rate"] else ui.tag("real gain", "pass")
+
+    table_rows, hot = [], []
+    for i, c in enumerate(code_rows):
+        f_ = fmt_rows.get(c["version"])
+        table_rows.append([
+            ui.esc(VERSIONS.get(c["version"], c["version"])),
+            pct(c), pval(c["p"]), verdict_tag(c),
+            pct(f_) if f_ else "", pval(f_["p"]) if f_ else "", verdict_tag(f_) if f_ else "",
+        ])
+        if (c["p"] < 0.05) or (f_ and f_["p"] < 0.05):
+            hot.append(i)
+    ui.table(["Way of asking", "Correct code", "p", "", "Replied with only code", "p", ""], table_rows, hot)
+
+    real = [(r, "correct code") for r in code_rows if r["p"] < 0.05] + \
+           [(r, "following \u201conly code\u201d") for r in fmt_rows.values() if r["p"] < 0.05]
+    if real:
+        parts = [f'{VERSIONS.get(r["version"], r["version"])} on {what} '
+                 f'({100 * r["rate"]:.0f}% vs {100 * r["base_rate"]:.0f}%, p {pval(r["p"]).replace("&lt;", "<")})'
+                 for r, what in real]
+        smallest = min(r["p"] for r in code_rows) if code_rows else 1
+        ui.finding("Statistically real: " + "; ".join(parts) + ". "
+                   + ("None of the differences in correct code are significant on their own "
+                      f"(smallest p = {smallest:.2f}), so those need more runs before we claim them."
+                      if all(r["p"] >= 0.05 for r in code_rows) else ""))
+    n_tests = max(1, 2 * len(code_rows))
+    strict = 0.05 / n_tests
+    survivors = [VERSIONS.get(r["version"], r["version"]) for r, _ in real if r["p"] < strict]
+    st.caption(f"We made {n_tests} comparisons, so a stricter cut-off (Bonferroni) is p < {strict:.4f}. "
+               + (f"Still real at that cut-off: {', '.join(survivors)}." if survivors else "No gap passes that stricter cut-off."))
+
+    # ---- Can it be fixed? (results/fixes.csv, made by fix_experiment.py) ----
+    FIXES_FILE = "results/fixes.csv"
+    if os.path.exists(FIXES_FILE):
+        fixes = pd.read_csv(FIXES_FILE, keep_default_na=False)
+        for col in ("passed_all", "followed_format"):
+            fixes[col] = fixes[col].astype(str).str.lower() == "true"
+        ui.section("Can it be fixed?",
+                   "We tried two simple fixes a coding tool could apply on the Kanglish prompts. "
+                   "Guard: add one fixed English line, \u201cReply with only one Python code block and nothing else. "
+                   "Name the function exactly ...\u201d. Translate: have the model translate the prompt into English first.")
+        fix_version = fixes["language"].iloc[0] if not fixes.empty else "kanglish_casual"
+        fix_rows, best_gain = [], None
+        for m in [m for m in models if m in set(fixes["model"])]:
+            b = results[(results["model"] == m) & (results["language"] == fix_version)]
+            cells = [f"<b>{ui.esc(MODELS.get(m, m))}</b>"]
+            base_fmt = b["followed_format"].mean() if len(b) else 0
+            for label, rows in [("none", b)] + [(fx, fixes[(fixes["model"] == m) & (fixes["fix"] == fx)])
+                                                for fx in ("guard", "translate")]:
+                if rows.empty:
+                    cells.append("")
+                    continue
+                c, f_ = rows["passed_all"].mean(), rows["followed_format"].mean()
+                colour = ui.T["pass"] if f_ >= 0.9 else (ui.T["accent"] if f_ >= 0.5 else ui.T["fail"])
+                cells.append(f'{100 * c:.0f}% correct · <span style="color:{colour};font-weight:600">'
+                             f'{100 * f_:.0f}% only code</span>')
+                if label != "none":
+                    gain = f_ - base_fmt
+                    if best_gain is None or gain > best_gain[0]:
+                        best_gain = (gain, label, m, base_fmt, f_)
+            fix_rows.append(cells)
+        ui.table(["Model (" + VERSIONS.get(fix_version, fix_version) + ")", "No fix", "Guard line", "Translate first"],
+                 fix_rows)
+        if best_gain and best_gain[0] > 0:
+            g, label, m, before, after = best_gain
+            ui.finding(f"Biggest improvement: the {'guard line' if label == 'guard' else 'translate-first'} fix took "
+                       f"{MODELS.get(m, m)} from {100 * before:.0f}% to {100 * after:.0f}% replies with only code. "
+                       "MixCheck can measure whether a fix really works, not just find the problem.")
+
+    # ---- Model leaderboard ----
+    ui.section("Model leaderboard", "All 10 ways of asking together. Weakest = the way of asking with the most failures.")
+    board = []
+    for m in models:
+        rows = results[results["model"] == m]
+        if rows.empty:
+            continue
+        per_v = rows.groupby("language").agg(c=("passed_all", "mean"), f=("followed_format", "mean"))
+        weakest = (per_v["c"] + per_v["f"]).idxmin()
+        board.append((rows["passed_all"].mean(), rows["followed_format"].mean(), m, weakest))
+    board.sort(key=lambda b: (b[0] + b[1]), reverse=True)
+    ui.table(["Model", "Correct code", "Replied with only code", "Weakest way of asking"],
+             [[f'<b>{ui.esc(MODELS.get(m, m))}</b> <span style="color:{ui.T["faint"]}">{ui.esc(exact_model_id(m) or "")}</span>',
+               f"{100 * c:.1f}%", f"{100 * f_:.1f}%", ui.esc(VERSIONS.get(w, w))] for c, f_, m, w in board])
+
+    # ---- Downloads ----
+    ui.section("Take the results with you", "The raw results table, and a short report a team could share.")
+    d1, d2 = st.columns(2)
+    with open(RESULTS_FILE, "rb") as fh:
+        d1.download_button("Download results (CSV)", fh.read(), file_name="mixcheck_results.csv", mime="text/csv")
+    d2.download_button("Download report (Markdown)", make_report(results, code_rows, fmt_rows, board),
+                       file_name="mixcheck_report.md", mime="text/markdown")
 
 # ---------------------------------------------------------------
 # Guess the verdict

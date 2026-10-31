@@ -1,0 +1,1 @@
+Create a Python function that compresses a string: if a character repeats consecutively, replace it with the character + the number of times it repeats; if it repeats only once, just keep the character without adding a number. Here’s the code.

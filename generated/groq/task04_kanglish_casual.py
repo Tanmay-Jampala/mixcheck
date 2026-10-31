@@ -1,69 +1,53 @@
-Here’s a clean, reusable **`is_palindrome`** function that follows exactly what you asked for:
-
-* **Ignores spaces** – they are stripped out before the check.  
-* **Case‑insensitive** – treats “A” and “a” as the same character.  
-* Returns **`True`** if the cleaned string reads the same forward and backward, otherwise **`False`**.
+Here’s a compact, case‑insensitive palindrome checker that ignores spaces (and any other whitespace characters).  
 
 ```python
 def is_palindrome(s: str) -> bool:
     """
-    Return True if the given string is a palindrome when spaces are ignored
-    and case is not considered.
+    Return True if `s` reads the same forward and backward,
+    ignoring spaces and case differences.
 
     Parameters
     ----------
     s : str
-        The input string to test.
+        The string to test.
 
     Returns
     -------
     bool
-        True  -> palindrome (ignoring spaces & case)
-        False -> not a palindrome
+        True  – `s` is a palindrome (ignoring spaces & case)
+        False – otherwise
     """
-    # 1. Remove all spaces
-    no_spaces = s.replace(" ", "")
-    # 2. Convert to a single case (lowercase)
-    normalized = no_spaces.lower()
-    # 3. Compare with its reverse
-    return normalized == normalized[::-1]
+    # Remove all whitespace and convert to a single case
+    cleaned = ''.join(ch for ch in s if not ch.isspace()).lower()
+    # Compare the cleaned string with its reverse
+    return cleaned == cleaned[::-1]
 
 
-# -------------------------------------------------
+# ------------------------------------------------------------------
 # Example usage
 if __name__ == "__main__":
-    test_cases = [
+    tests = [
         "A man a plan a canal Panama",
         "Was it a car or a cat I saw",
         "Hello World",
-        "Madam",
-        "No lemon no melon",
-        "  ",                     # only spaces -> considered palindrome
-        "",                       # empty string -> palindrome
+        "RaceCar",
+        "  ",
+        "No lemon, no melon"
     ]
 
-    for txt in test_cases:
+    for txt in tests:
         print(f"{txt!r:30} -> {is_palindrome(txt)}")
 ```
 
-### How it works
-1. **`s.replace(" ", "")`** removes every space character.  
-   (If you also want to ignore other whitespace like tabs or new‑lines, use `''.join(s.split())` instead.)
+**Explanation**
 
-2. **`.lower()`** normalises the string so that `'A'` and `'a'` are treated the same.
+1. **`''.join(ch for ch in s if not ch.isspace())`**  
+   – Builds a new string that contains every character from `s` except whitespace (`' '`, `'\t'`, `'\n'`, …).
 
-3. **`normalized[::-1]`** creates the reversed version of the cleaned string.  
-   If the cleaned string equals its reverse, it’s a palindrome.
+2. **`.lower()`**  
+   – Normalises the case so that `'A'` and `'a'` are treated the same.
 
-### Quick test
+3. **`cleaned == cleaned[::-1]`**  
+   – Checks whether the processed string is identical to its reverse (`[::-1]` slices the string backwards).
 
-```python
->>> is_palindrome("A man a plan a canal Panama")
-True
->>> is_palindrome("Hello World")
-False
->>> is_palindrome("Madam")
-True
-```
-
-Feel free to drop this function into any of your projects! 🚀
+The function returns `True` only when the original string is a palindrome after ignoring spaces and case differences. Feel free to adapt the whitespace filter (e.g., also strip punctuation) if you need a stricter definition.

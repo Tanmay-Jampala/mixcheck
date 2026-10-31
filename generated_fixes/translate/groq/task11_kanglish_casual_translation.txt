@@ -1,0 +1,1 @@
+I need a Python function named celsius_to_fahrenheit that takes a Celsius value and returns Fahrenheit, using the formula F = C*9/5 + 32. Write the code.

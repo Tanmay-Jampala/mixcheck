@@ -1,0 +1,1 @@
+In Python, write an `is_palindrome` function; the string may contain spaces; if it reads the same forward and backward return True, otherwise return False; ignore differences between uppercase and lowercase. Write the code.

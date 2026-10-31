@@ -1,12 +1,22 @@
-**Python – `minutes_between(start, end)`**
+**Python function**
 
 ```python
 def minutes_between(start: str, end: str) -> int:
     """
     Return the number of minutes from *start* to *end*.
-    Both arguments must be strings in 24‑hour format "HH:MM".
-    If *end* is earlier than *start*, the interval is assumed to cross midnight
-    (i.e. *end* is on the next day).
+
+    Parameters
+    ----------
+    start : str
+        Start time in 24‑hour format "HH:MM".
+    end : str
+        End time in 24‑hour format "HH:MM".
+
+    Returns
+    -------
+    int
+        Minutes between the two times.  
+        If *end* is earlier than *start*, it is assumed to be on the next day.
 
     Examples
     --------
@@ -17,38 +27,25 @@ def minutes_between(start: str, end: str) -> int:
     >>> minutes_between("12:00", "12:00")
     0
     """
-    # ---- 1. Parse the strings ---------------------------------------------
-    try:
-        h1, m1 = map(int, start.split(":"))
-        h2, m2 = map(int, end.split(":"))
-    except Exception as exc:
-        raise ValueError("Both times must be in 'HH:MM' format") from exc
+    # Convert "HH:MM" to minutes since midnight
+    sh, sm = map(int, start.split(':'))
+    eh, em = map(int, end.split(':'))
 
-    # Basic sanity checks (optional but handy)
-    if not (0 <= h1 < 24 and 0 <= m1 < 60):
-        raise ValueError(f"Invalid start time: {start}")
-    if not (0 <= h2 < 24 and 0 <= m2 < 60):
-        raise ValueError(f"Invalid end time: {end}")
+    start_min = sh * 60 + sm
+    end_min   = eh * 60 + em
 
-    # ---- 2. Convert to minutes since midnight -----------------------------
-    start_min = h1 * 60 + m1
-    end_min   = h2 * 60 + m2
+    # If end is earlier, it means the next day
+    if end_min < start_min:
+        end_min += 24 * 60
 
-    # ---- 3. Compute the difference ---------------------------------------
-    diff = end_min - start_min
-    if diff < 0:                     # crossed midnight
-        diff += 24 * 60              # add 24 hours
-
-    return diff
+    return end_min - start_min
 ```
 
-### How it works
+**How it works**
 
-1. **Parsing** – `split(":")` turns `"HH:MM"` into two integers.  
-2. **Validation** – Optional checks ensure the hour is 0‑23 and the minute 0‑59.  
-3. **Minutes‑since‑midnight** – Convert each time to a single integer (`hour*60 + minute`).  
-4. **Difference** – Subtract the start from the end.  
-   * If the result is negative, the end time is on the next day, so we add 24 × 60 minutes.  
-5. **Return** – The final difference is the number of minutes between the two times.
+1. Split each string into hours and minutes and convert to integers.  
+2. Compute the total minutes from midnight for both times.  
+3. If the end time is earlier than the start time, add 24 × 60 minutes to the end time to account for the next day.  
+4. Return the difference.
 
-Feel free to drop this function into your project or adapt it to your own style.
+This function handles all edge cases (same time → 0 minutes, overnight wrap‑around, etc.) and works with any valid 24‑hour `"HH:MM"` strings.

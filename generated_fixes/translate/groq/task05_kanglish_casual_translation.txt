@@ -1,0 +1,1 @@
+I need a Python function named remove_duplicates that removes duplicates from a list, keeps the first occurrence, preserves the order, and returns a new list. Write the code.

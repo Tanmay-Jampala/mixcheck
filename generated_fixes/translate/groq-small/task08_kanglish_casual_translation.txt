@@ -1,0 +1,1 @@
+Need second_largest fn in python, list contains all distinct numbers, return the second largest number, if less than 2 numbers return None. Write code.

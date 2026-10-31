@@ -1,0 +1,1 @@
+In Python, write an is_palindrome function that takes a string without spaces, reads it from front to back, returns True if it reads the same, otherwise False, ignoring case differences. Write the code.

@@ -1,0 +1,1 @@
+In Python, write a function called `reverse_string` that takes a string, reverses it, and returns it. Provide the code.

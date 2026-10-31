@@ -1,63 +1,67 @@
-**Python function – `valid_mobile`**
-
 ```python
-import re
-
 def valid_mobile(number: str) -> bool:
     """
-    Return True if *number* is a valid Indian mobile number, otherwise False.
+    Check whether a string is a valid Indian mobile number.
 
-    Rules applied (in order):
-    1. Strip all whitespace characters.
-    2. Remove a leading country code `+91` or a leading zero `0` if present.
-    3. After the optional prefix, the remaining string must contain **exactly 10 digits**.
-    4. The first digit of the 10‑digit part must be 6, 7, 8 or 9.
+    Rules applied (after stripping all spaces):
+    1. Optional leading prefix: '+91' or a single '0' (both removed if present).
+    2. Remaining part must be exactly 10 digits.
+    3. The first digit of the 10‑digit part must be 6, 7, 8 or 9.
+
+    Parameters
+    ----------
+    number : str
+        The phone number string to validate.
+
+    Returns
+    -------
+    bool
+        True if the string satisfies all the above rules, False otherwise.
     """
-    # 1. Remove all whitespace
-    num = re.sub(r'\s+', '', number)
+    # 1. Remove all spaces
+    s = number.replace(' ', '')
 
-    # 2. Strip leading +91 or 0
-    if num.startswith('+91'):
-        num = num[3:]
-    elif num.startswith('0'):
-        num = num[1:]
+    # 2. Strip optional prefix
+    if s.startswith('+91'):
+        s = s[3:]
+    elif s.startswith('0'):
+        s = s[1:]
 
-    # 3. Must be 10 digits
-    if not re.fullmatch(r'\d{10}', num):
+    # 3. Must be exactly 10 digits
+    if len(s) != 10 or not s.isdigit():
         return False
 
-    # 4. First digit must be 6‑9
-    return num[0] in '6789'
+    # 4. First digit must be 6,7,8 or 9
+    return s[0] in '6789'
 
 
-# ------------------------------------------------------------------
-# Example usage
-# ------------------------------------------------------------------
+# ---- Example usage ----
 if __name__ == "__main__":
     test_numbers = [
         "9876543210",          # valid
         "+91 9876543210",      # valid
         "09876543210",         # valid
         "  9876543210  ",      # valid (spaces trimmed)
-        "1234567890",          # invalid – starts with 1
+        "1234567890",          # invalid (starts with 1)
         "+919876543210",       # valid
-        "+91 98765 43210",     # valid (spaces inside)
-        "987654321",           # invalid – only 9 digits
-        "98765432101",         # invalid – 11 digits
-        "+91 987654321a",      # invalid – contains letter
+        "+91 98765 43210",     # valid
+        "987654321",           # invalid (9 digits)
+        "98765432101",         # invalid (11 digits)
+        "+91 987654321a",      # invalid (non‑digit)
     ]
 
-    for n in test_numbers:
-        print(f"{n!r:20} -> {valid_mobile(n)}")
+    for num in test_numbers:
+        print(f"{num!r:20} -> {valid_mobile(num)}")
 ```
 
-### How it works
+**Explanation of the logic**
 
-| Step | What happens | Why |
-|------|--------------|-----|
-| 1 | `re.sub(r'\s+', '', number)` | Removes **all** whitespace (spaces, tabs, newlines). |
-| 2 | Strip `+91` or `0` | Indian numbers may be written with the country code or a leading zero. |
-| 3 | `re.fullmatch(r'\d{10}', num)` | Ensures the remaining string is **exactly** 10 digits. |
-| 4 | `num[0] in '6789'` | Valid Indian mobile numbers start with 6, 7, 8 or 9. |
+1. **Remove spaces** – `replace(' ', '')` ensures that any whitespace inside the string is ignored.
+2. **Optional prefix** –  
+   * If the string starts with `+91`, drop the first three characters.  
+   * Else if it starts with a single `0`, drop that character.  
+   This leaves only the core 10‑digit number (if present).
+3. **Length & digit check** – The remaining string must be exactly 10 characters long and all of them must be digits (`s.isdigit()`).
+4. **First‑digit rule** – The first digit must belong to the set `{6,7,8,9}`.
 
-The function returns a boolean (`True` for a valid number, `False` otherwise). It is lightweight, uses only the standard library, and can be dropped into any project that needs to validate Indian mobile numbers.
+If all checks pass, the function returns `True`; otherwise it returns `False`.

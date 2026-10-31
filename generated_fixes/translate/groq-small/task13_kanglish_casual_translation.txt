@@ -1,0 +1,1 @@
+Create a Python function named **word_count** that takes a lowercase sentence with no punctuation and single spaces, and returns a dictionary where each word appears as many times as it occurs. Write the code.

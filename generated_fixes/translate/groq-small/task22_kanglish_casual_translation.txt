@@ -1,0 +1,1 @@
+Write a Python function named **merge_intervals** that takes a list of **[start, end]** intervals. Merge any overlapping intervals, and also treat touching intervals (where one interval ends exactly where another begins) as overlapping. Sort the resulting intervals by **start** and return a list of **[start, end]** intervals. Provide the code.

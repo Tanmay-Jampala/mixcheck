@@ -1,0 +1,1 @@
+Create a Python function named factorial; if n is negative, handle it accordingly, and assume the factorial of 0 is 1. Write the code.

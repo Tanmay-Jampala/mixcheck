@@ -1,0 +1,1 @@
+remove_duplicates is a Python function that should remove duplicates from a list, keep the first occurrence, preserve the order, and return a new list. Write code.

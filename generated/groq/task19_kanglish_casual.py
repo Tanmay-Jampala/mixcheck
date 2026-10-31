@@ -1,78 +1,56 @@
-**Python ಫಂಕ್ಷನ್ – `minutes_between`**
+Here’s a compact, pure‑Python implementation that follows exactly what you described:
 
 ```python
 def minutes_between(start: str, end: str) -> int:
     """
-    start, end : 24‑ಗಂಟೆ “HH:MM” ಸ್ಟ್ರಿಂಗ್‌ಗಳು
-    return    : start‑ನಿಂದ end‑ವರೆಗೆ ಎಷ್ಟು ನಿಮಿಷಗಳು ಕಳೆದಿವೆ.
-                end, start‑ಗಿಂತ ಮುಂಚೆ ಇದ್ದರೆ, ಅದು ಮುಂದಿನ ದಿನದ ಸಮಯವೆಂದು ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ.
+    Return the number of minutes from *start* to *end*.
+    
+    Both arguments must be strings in 24‑hour “HH:MM” format.
+    If *end* is earlier than *start* it is treated as a time on the
+    following day.
+
+    Example
+    -------
+    >>> minutes_between("09:30", "12:15")
+    165
+    >>> minutes_between("22:10", "01:45")   # next‑day case
+    215
     """
-    # ---------- 1. ಸ್ಟ್ರಿಂಗ್‌ನ್ನು ಗಂಟೆ‑ನಿಮಿಷಕ್ಕೆ ಪಾರ್ಸ್ ಮಾಡು ----------
-    def to_minutes(t: str) -> int:
-        h, m = map(int, t.split(":"))
-        return h * 60 + m                     # ಒಟ್ಟು ನಿಮಿಷಗಳು 00:00 ರಿಂದ
+    # ---- 1️⃣  Parse the two strings into hour / minute integers ----
+    sh, sm = map(int, start.split(":"))
+    eh, em = map(int, end.split(":"))
 
-    start_min = to_minutes(start)
-    end_min   = to_minutes(end)
+    # ---- 2️⃣  Convert each time to “minutes since midnight” ----
+    start_min = sh * 60 + sm
+    end_min   = eh * 60 + em
 
-    # ---------- 2. ವ್ಯತ್ಯಾಸವನ್ನು ಲೆಕ್ಕ ಹಾಕು ----------
-    if end_min >= start_min:                     # ಅದೇ ದಿನದೊಳಗೆ
-        diff = end_min - start_min
-    else:                                        # ಮುಂದಿನ ದಿನ
-        diff = (24 * 60 - start_min) + end_min   # ಉಳಿದ ದಿನದ ನಿಮಿಷ + ಮುಂದಿನ ದಿನದ ನಿಮಿಷ
+    # ---- 3️⃣  If end is earlier, add 24 h (1440 min) to treat it as next day ----
+    if end_min < start_min:
+        end_min += 24 * 60   # 1440 minutes
 
-    return diff
-```
+    # ---- 4️⃣  The difference is the answer ----
+    return end_min - start_min
 
----
 
-## ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ?
-
-| ಹಂತ | ವಿವರಣೆ |
-|------|----------|
-| **ಪಾರ್ಸ್** | `"HH:MM"` → `hour*60 + minute` (ಉದಾ: `"02:30"` → `150` ನಿಮಿಷ) |
-| **ಸಾಮಾನ್ಯ ಪ್ರಕರಣ** | `end_min >= start_min` → `diff = end_min - start_min` |
-| **ಮುಂದಿನ ದಿನ** | `end_min < start_min` → `diff = (1440 - start_min) + end_min` (1440 = 24 × 60) |
-
----
-
-## ಉದಾಹರಣೆಗಳು
-
-```python
-print(minutes_between("09:15", "10:45"))   # 90  (1 ಗಂಟೆ 30 ನಿಮಿಷ)
-print(minutes_between("23:30", "00:15"))   # 45  (ಮುಂದಿನ ದಿನದ 15 ನಿಮಿಷ)
-print(minutes_between("12:00", "12:00"))   # 0   (ಸಮಯ ಒಂದೇ)
-print(minutes_between("18:20", "17:10"))   # 1410 (23 ಗಂಟೆ 50 ನಿಮಿಷ, ಮುಂದಿನ ದಿನ)
-```
-
----
-
-## ಹೆಚ್ಚುವರಿ ಟಿಪ್ಪಣಿಗಳು
-
-1. **ಇನ್‌ಪುಟ್ ಮಾನ್ಯತೆ** – ಈ ಫಂಕ್ಷನ್ ಸರಳವಾಗಿ `split(":")` ಮತ್ತು `int()` ಬಳಸುತ್ತದೆ; ಆದ್ದರಿಂದ `"24:00"` ಅಥವಾ `"12:60"` ಮುಂತಾದ ಅಮಾನ್ಯ ಸಮಯಗಳು `ValueError` ಉಂಟುಮಾಡಬಹುದು. ಪ್ರೊಡಕ್ಷನ್ ಕೋಡ್‌ನಲ್ಲಿ `try/except` ಅಥವಾ ರೆಗುಲರ್ ಎಕ್ಸ್‌ಪ್ರೆಷನ್‌ ಮೂಲಕ ಮಾನ್ಯತೆ ಸೇರಿಸಬಹುದು.
-
-2. **ಟೈಮ್‌ಜೋನ್/ಡೇಲೈಟ್‑ಸೆವಿಂಗ್** – ಈ ಫಂಕ್ಷನ್ ಕೇವಲ “ಕ್ಲಾಕ್‑ಮತ್ತು‑ಮಿನಿಟ್” ಮಟ್ಟದ ವ್ಯತ್ಯಾಸವನ್ನು ಲೆಕ್ಕ ಹಾಕುತ್ತದೆ; ದಿನಾಂಕ, ಟೈಮ್‌ಜೋನ್, ಲೀಪ್ ಸೆಕೆಂಡ್‌ಗಳು ಇತ್ಯಾದಿ ಪರಿಗಣಿಸಲ್ಪಡುವುದಿಲ್ಲ.
-
-3. **ಪರೀಕ್ಷೆ** – `unittest` ಅಥವಾ `pytest` ಬಳಸಿ ಸ್ವಯಂಚಾಲಿತ ಪರೀಕ್ಷೆ ಬರೆಯುವುದರಿಂದ ಭವಿಷ್ಯದ ಬದಲಾವಣೆಗಳಲ್ಲಿ ದೋಷಗಳು ಬರದಂತೆ ನೋಡಿಕೊಳ್ಳಬಹುದು.
-
-```python
-import unittest
-
-class TestMinutesBetween(unittest.TestCase):
-    def test_same_day(self):
-        self.assertEqual(minutes_between("08:00", "09:30"), 90)
-
-    def test_next_day(self):
-        self.assertEqual(minutes_between("22:15", "01:45"), 210)
-
-    def test_full_day(self):
-        self.assertEqual(minutes_between("00:00", "00:00"), 0)
-
-    def test_wrap_around(self):
-        self.assertEqual(minutes_between("23:59", "00:01"), 2)
-
+# ----------------------------------------------------------------------
+# Quick sanity‑check (you can delete or comment this block in production)
 if __name__ == "__main__":
-    unittest.main()
+    tests = [
+        ("09:30", "12:15", 165),
+        ("22:10", "01:45", 215),   # next‑day
+        ("00:00", "00:00", 0),
+        ("23:59", "00:01", 2),     # next‑day, crossing midnight
+    ]
+
+    for s, e, expected in tests:
+        result = minutes_between(s, e)
+        print(f"{s} → {e} = {result} min  {'✅' if result == expected else '❌'}")
 ```
 
-ಇದು ನಿಮಗೆ ಬೇಕಾದ **“start‑inda end‑varegu ಎಷ್ಟು ನಿಮಿಷ”** ಅನ್ನು ಸರಳವಾಗಿ ನೀಡುವ ಫಂಕ್ಷನ್. 🎉
+### How it works
+1. **Parsing** – `split(":")` gives the hour and minute parts, which we turn into integers.
+2. **Normalization** – `hour * 60 + minute` converts each time to “minutes since midnight”.
+3. **Cross‑midnight handling** – If the end‑time’s minute count is smaller than the start‑time’s, we add a full day (1440 minutes) to the end‑time. This makes the interval span into the next day.
+4. **Result** – The simple subtraction yields the number of minutes between the two moments.
+
+The function works for any valid `"HH:MM"` strings (00 ≤ HH ≤ 23, 00 ≤ MM ≤ 59). If you need stricter validation you can add a `try/except` block or use `datetime.strptime`, but the above keeps it lightweight and fast.

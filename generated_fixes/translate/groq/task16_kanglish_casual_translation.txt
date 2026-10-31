@@ -1,0 +1,1 @@
+Create a Python function named `indian_format` that takes a non‑negative number and returns a string with Indian‑style commas. The last 3 digits should be grouped together, and the preceding digits should be grouped in pairs of 2‑2. Numbers less than 1000 should not have any commas. Provide the code.

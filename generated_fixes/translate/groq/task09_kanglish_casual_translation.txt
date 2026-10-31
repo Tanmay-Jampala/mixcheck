@@ -1,0 +1,1 @@
+Write a Python function called `count_words` that tells how many words are in a given string; words are separated by spaces, and leading, trailing, or extra spaces in the middle should not be counted as words. Provide the code.

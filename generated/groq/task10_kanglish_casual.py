@@ -1,72 +1,68 @@
-**Python‑ನಲ್ಲಿ Fibonacci ಫಂಕ್ಷನ್**
+Here’s a clean, Python‑ic implementation of a function that returns the *n*‑th Fibonacci number with the required base cases  
 
 ```python
 def fibonacci(n: int) -> int:
     """
-    n‑ನೇ Fibonacci ಸಂಖ್ಯೆಯನ್ನು ಹಿಂತಿರುಗಿಸುವುದು.
-    ನಿರ್ವಚನೆ:
+    Return the n‑th Fibonacci number.
+    
+    Definitions:
         fibonacci(0) = 0
         fibonacci(1) = 1
-        fibonacci(k) = fibonacci(k‑1) + fibonacci(k‑2)   (k ≥ 2)
-
+        fibonacci(n) = fibonacci(n‑1) + fibonacci(n‑2)   for n >= 2
+    
     Parameters
     ----------
     n : int
-        ಹುಡುಕಬೇಕಾದ ಸ್ಥಾನ (0‑ಆಧಾರಿತ).
+        The index (must be a non‑negative integer).
 
     Returns
     -------
     int
-        n‑ನೇ Fibonacci ಸಂಖ್ಯೆ.
-
-    Raises
-    ------
-    ValueError
-        n ನೆಗೆಟಿವ್ ಆಗಿದ್ದರೆ.
+        The n‑th Fibonacci number.
     """
     if n < 0:
         raise ValueError("n must be a non‑negative integer")
 
-    # ಮೂಲ ಪ್ರಕರಣಗಳು
+    # Fast path for the two base cases
     if n == 0:
         return 0
     if n == 1:
         return 1
 
-    # ಇಟರೇಟಿವ್ (O(n) ಸಮಯ, O(1) ಸ್ಥಳ) ಅನುಷ್ಠಾನ
-    a, b = 0, 1          # a = fibonacci(i‑2), b = fibonacci(i‑1)
+    # Iterative DP – O(n) time, O(1) extra space
+    a, b = 0, 1          # a = F(i‑2), b = F(i‑1)
     for _ in range(2, n + 1):
-        a, b = b, a + b   # ಹೊಸ fibonacci(i) = a + b
+        a, b = b, a + b  # now b = F(i)
     return b
 ```
 
-### ಹೇಗೆ ಬಳಸುವುದು
+### How it works
+1. **Input validation** – we raise an error for negative indices because the classic Fibonacci sequence is defined only for `n >= 0`.
+2. **Base cases** – `0` and `1` are returned directly.
+3. **Iterative loop** – we keep only the two most recent Fibonacci numbers (`a` and `b`).  
+   Each iteration updates them so that `b` becomes the next Fibonacci number.  
+   This runs in linear time `O(n)` and uses constant extra memory `O(1)`.
+
+### Quick test
 
 ```python
-if __name__ == "__main__":
-    for i in range(10):
-        print(f"F({i}) = {fibonacci(i)}")
+for i in range(10):
+    print(i, fibonacci(i))
 ```
 
-**ಫಲಿತಾಂಶ**
+Output:
 
 ```
-F(0) = 0
-F(1) = 1
-F(2) = 1
-F(3) = 2
-F(4) = 3
-F(5) = 5
-F(6) = 8
-F(7) = 13
-F(8) = 21
-F(9) = 34
+0 0
+1 1
+2 1
+3 2
+4 3
+5 5
+6 8
+7 13
+8 21
+9 34
 ```
 
-### ಟಿಪ್ಪಣಿಗಳು
-
-* ಈ ಅನುಷ್ಠಾನವು **ಇಟರೇಟಿವ್** ಆಗಿದೆ, ಆದ್ದರಿಂದ ಪುನರಾವರ್ತನೆ (recursion) ಬಳಸುವ exponential‑time ಪರಿಹಾರಕ್ಕಿಂತ ಬಹಳ ವೇಗವಾಗಿರುತ್ತದೆ.  
-* ಸಮಯ ಸಂಕೀರ್ಣತೆ **O(n)**, ಹೆಚ್ಚುವರಿ ಮೆಮೊರಿ **O(1)**.  
-* `n` ನೆಗೆಟಿವ್ ಆಗಿದ್ದರೆ `ValueError` ಎಸೆದು, ತಪ್ಪು ಇನ್‌ಪುಟ್‌ಗಳನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಸೂಚಿಸುತ್ತದೆ.  
-
-ಇದು ನಿಮಗೆ ಬೇಕಾದ “nth Fibonacci number” ಅನ್ನು ನೀಡುವ ಸರಳ ಹಾಗೂ ಪರಿಣಾಮಕಾರಿ ಫಂಕ್ಷನ್. 🎉
+Feel free to copy the function into your project. If you need a version that works for very large `n` (e.g., using matrix exponentiation or fast doubling) just let me know!

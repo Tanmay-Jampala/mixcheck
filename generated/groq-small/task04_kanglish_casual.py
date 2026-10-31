@@ -1,57 +1,52 @@
-**Python‑ನಲ್ಲಿ `is_palindrome` ಫಂಕ್ಷನ್ (ಸ್ಪೇಸ್‌ಗಳನ್ನು ನಿರ್ಲಕ್ಷಿಸಿ, ಕೇಸ್‑ಇನ್‌ಸೆನ್ಸಿಟಿವ್)**
+**Python – `is_palindrome` ಫಂಕ್ಷನ್ (spaces ಅಗಣಿಸಿ, case‑insensitive)**  
 
 ```python
 def is_palindrome(s: str) -> bool:
     """
-    ಕೊಟ್ಟಿರುವ ಸ್ಟ್ರಿಂಗ್ `s` ಅನ್ನು ಸ್ಪೇಸ್‌ಗಳನ್ನು ತೆಗೆದುಹಾಕಿ, 
-    ಎಲ್ಲಾ ಅಕ್ಷರಗಳನ್ನು ಲೋವರ್‑ಕೇಸ್‌ಗೆ ಪರಿವರ್ತಿಸಿ, ನಂತರ 
-    ಅದು ಪ್ಯಾಲಿಂಡ್ರೋಮ್ ಆಗಿದೆಯೇ ಎಂದು ಪರಿಶೀಲಿಸುತ್ತದೆ.
-
-    Parameters
-    ----------
-    s : str
-        ಪರಿಶೀಲಿಸಬೇಕಾದ ಸ್ಟ್ರಿಂಗ್.
-
-    Returns
-    -------
-    bool
-        ಸ್ಟ್ರಿಂಗ್ ಪ್ಯಾಲಿಂಡ್ರೋಮ್ ಆಗಿದ್ದರೆ True, ಇಲ್ಲದಿದ್ದರೆ False.
+    Return True if the given string is a palindrome.
+    
+    Rules:
+    * Spaces are ignored.
+    * Upper‑case / lower‑case letters are treated as the same.
+    * All other characters (punctuation, digits, etc.) are considered part of the string.
+    
+    Examples
+    --------
+    >>> is_palindrome("Madam In Eden, I'm Adam")
+    True
+    >>> is_palindrome("Hello World")
+    False
     """
-    # 1. ಸ್ಪೇಸ್‌ಗಳನ್ನು ತೆಗೆದುಹಾಕಿ
+    # 1. Remove all spaces
     cleaned = s.replace(" ", "")
-    # 2. ಕೇಸ್‑ಇನ್‌ಸೆನ್ಸಿಟಿವ್ ಮಾಡಲು ಲೋವರ್‑ಕೇಸ್‌ಗೆ ಪರಿವರ್ತಿಸಿ
+    # 2. Make it case‑insensitive
     cleaned = cleaned.lower()
-    # 3. ಪ್ಯಾಲಿಂಡ್ರೋಮ್ ಪರಿಶೀಲನೆ
+    # 3. Compare with its reverse
     return cleaned == cleaned[::-1]
 
 
-# ಉದಾಹರಣೆಗಳು
+# Quick sanity‑check
 if __name__ == "__main__":
     tests = [
-        ("Madam", True),
-        ("A man a plan a canal Panama", True),
+        ("Madam In Eden, I'm Adam", True),
         ("Hello World", False),
-        ("Was it a car or a cat I saw", True),
+        ("A man a plan a canal Panama", True),
         ("No lemon no melon", True),
-        ("Python", False),
+        ("Was it a car or a cat I saw", True),
+        ("Not a palindrome", False),
     ]
 
-    for text, expected in tests:
-        result = is_palindrome(text)
-        print(f"'{text}' -> {result} (expected: {expected})")
+    for txt, expected in tests:
+        result = is_palindrome(txt)
+        print(f"{txt!r:40} -> {result} (expected {expected})")
 ```
 
-### ವಿವರಣೆ
+### How it works
 
-1. **ಸ್ಪೇಸ್ ತೆಗೆದುಹಾಕುವುದು**  
-   `s.replace(" ", "")` ಮೂಲಕ ಎಲ್ಲಾ ಖಾಲಿ ಜಾಗಗಳನ್ನು ತೆಗೆದುಹಾಕುತ್ತೇವೆ.  
-   (ಅಗತ್ಯವಿದ್ದರೆ `split()` ಮತ್ತು `join()` ಬಳಸಿ ಬಹು ಖಾಲಿ ಜಾಗಗಳನ್ನೂ ತೆಗೆದುಹಾಕಬಹುದು.)
+1. **Remove spaces** – `s.replace(" ", "")` gives a new string without any space characters.  
+2. **Normalize case** – `lower()` turns everything into lower‑case, so `"A"` and `"a"` are treated the same.  
+3. **Palindrome check** – `cleaned == cleaned[::-1]` compares the string with its reverse.  
+   * `[::-1]` is a slice that returns the string reversed.  
+   * If they match, the string is a palindrome; otherwise it isn’t.
 
-2. **ಕೇಸ್‑ಇನ್‌ಸೆನ್ಸಿಟಿವ್**  
-   `cleaned.lower()` ಮೂಲಕ ಎಲ್ಲಾ ಅಕ್ಷರಗಳನ್ನು ಲೋವರ್‑ಕೇಸ್‌ಗೆ ಪರಿವರ್ತಿಸುತ್ತೇವೆ, ಹೀಗಾಗಿ `Madam` ಮತ್ತು `madam` ಎರಡನ್ನೂ ಒಂದೇ ರೀತಿಯಲ್ಲಿ ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ.
-
-3. **ಪ್ಯಾಲಿಂಡ್ರೋಮ್ ಪರಿಶೀಲನೆ**  
-   `cleaned == cleaned[::-1]` ಮೂಲಕ ಸ್ಟ್ರಿಂಗ್ ಮತ್ತು ಅದರ ರಿವರ್ಸ್ ಒಂದೇ ಆಗಿದೆಯೇ ಎಂದು ಪರಿಶೀಲಿಸುತ್ತೇವೆ.  
-   `[::-1]` ಸ್ಲೈಸಿಂಗ್ ಮೂಲಕ ಸ್ಟ್ರಿಂಗ್ ಅನ್ನು ಹಿಮ್ಮುಖವಾಗಿ ಪಡೆಯಬಹುದು.
-
-ಈ ಫಂಕ್ಷನ್ ಸರಳ, ಓದಲು ಸುಲಭ ಮತ್ತು ಯಾವುದೇ ಉದ್ದದ ಸ್ಟ್ರಿಂಗ್‌ಗಳಿಗೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ.
+Feel free to drop this function into your project or tweak it (e.g., to ignore punctuation as well).

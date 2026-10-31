@@ -1,0 +1,1 @@
+I need a Python function named **caesar_shift** that takes a string and a number **k**. It should shift each English letter forward by **k** positions, wrapping around after **z** to **a**. Capital letters should remain capital, lowercase letters should remain lowercase, and non‑letters (spaces, digits, punctuation) should stay unchanged. Please provide the code.

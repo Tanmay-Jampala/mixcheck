@@ -9,6 +9,7 @@ import importlib.util
 import json
 import os
 import re
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -85,53 +86,106 @@ def load_tests(test_file):
 # ---------------------------------------------------------------
 # Part 3: the helper script that runs in a SEPARATE process.
 # It loads the AI's code, calls the function on every case,
-# and prints the score with RESULT_MARKER in front.
+# and prints the score with RESULT_MARKER + a secret code in front.
+#
+# Safety layers (the AI's code is untrusted):
+#   1. separate process with a time limit       -> a crash or endless loop can't hurt the app
+#   2. clean environment (-I, no API keys)       -> the code can't read our secrets
+#   3. Python audit hook                         -> blocks network, running programs,
+#                                                   deleting/writing files, ctypes
+#   4. memory limit (Linux, e.g. Streamlit Cloud) -> can't eat all the RAM
+#   5. secret per-run code on the result line    -> printing a fake "passed" line doesn't work
 # ---------------------------------------------------------------
-RUNNER_CODE = '''
-import copy, importlib.util, json, sys
+RUNNER_CODE = r"""
+import copy, importlib.util, json, os, sys
 
-MARKER = "__MIXCHECK_RESULT__"
-test_path, solution_path = sys.argv[1], sys.argv[2]
+def main():
+    secret = sys.stdin.readline().strip()        # only the grader knows this
+    write = sys.__stdout__.write                 # keep our own handle on stdout
+    flush = sys.__stdout__.flush
+    test_path, solution_path = sys.argv[1], sys.argv[2]
 
-spec = importlib.util.spec_from_file_location("test_module", test_path)
-tests = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(tests)
+    spec = importlib.util.spec_from_file_location("test_module", test_path)
+    tests = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tests)
+    function_name, cases = tests.FUNCTION, copy.deepcopy(tests.CASES)
+    result = {"passed": 0, "total": len(cases), "error": None}
 
-result = {"passed": 0, "total": len(tests.CASES), "error": None}
+    def finish():
+        write("__MIXCHECK_RESULT__" + secret + json.dumps(result) + "\n")
+        flush()
+        os._exit(0)
 
-def finish():
-    print(MARKER + json.dumps(result))
-    sys.exit(0)
+    with open(solution_path, encoding="utf-8") as f:
+        source = f.read()
 
-# Load the AI's code
-with open(solution_path, encoding="utf-8") as f:
-    source = f.read()
-namespace = {"__name__": "ai_solution"}
-try:
-    exec(compile(source, "ai_code.py", "exec"), namespace)
-except Exception as e:
-    result["error"] = "The code crashed while loading: " + type(e).__name__ + ": " + str(e)
-    finish()
-
-# Find the function we are testing
-func = namespace.get(tests.FUNCTION)
-if not callable(func):
-    result["error"] = "No function named '" + tests.FUNCTION + "' in the AI's code"
-    finish()
-
-# Try every case
-for args, expected in tests.CASES:
+    # Layer 4: memory limit (works on Linux; skipped on Windows)
     try:
-        actual = func(*copy.deepcopy(args))
-        if actual == expected:
-            result["passed"] += 1
-    except Exception as e:
-        if result["error"] is None:
-            result["error"] = ("Crashed on input " + repr(args) + ": "
-                               + type(e).__name__ + ": " + str(e))
+        import resource
+        limit = 1024 * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+    except Exception:
+        pass
 
-finish()
-'''
+    # Layer 3: block dangerous actions from here on
+    blocked = ("subprocess.", "os.system", "os.exec", "os.spawn", "os.posix_spawn", "os.fork",
+               "os.kill", "os.remove", "os.unlink", "os.rmdir", "os.rename", "os.chmod",
+               "os.putenv", "os.unsetenv", "shutil.", "socket.", "urllib.", "http.", "ftplib.",
+               "smtplib.", "ctypes.", "winreg.", "webbrowser.")
+    write_flags = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | getattr(os, "O_TRUNC", 0)
+
+    # Reading is allowed only inside Python itself and this run's temporary folder,
+    # so the code can import the standard library but can't read our project or .env file
+    readable = tuple(os.path.normcase(os.path.abspath(p)) for p in
+                     {sys.prefix, sys.base_prefix, sys.exec_prefix, os.path.dirname(solution_path)})
+
+    def guard(event, args):
+        if event.startswith(blocked):
+            raise PermissionError("blocked by the MixCheck sandbox: " + event)
+        if event == "open":
+            path = args[0] if args else None
+            mode = args[1] if len(args) > 1 else None
+            flags = args[2] if len(args) > 2 else None
+            writing = (isinstance(mode, str) and any(c in mode for c in "wax+")) or \
+                      (isinstance(flags, int) and flags & write_flags)
+            if writing:
+                raise PermissionError("blocked by the MixCheck sandbox: writing files")
+            if isinstance(path, (str, bytes)):
+                full = os.path.normcase(os.path.abspath(os.fsdecode(path)))
+                if not full.startswith(readable):
+                    raise PermissionError("blocked by the MixCheck sandbox: reading files outside Python")
+
+    sys.dont_write_bytecode = True
+    sys.addaudithook(guard)
+
+    namespace = {"__name__": "ai_solution"}
+    try:
+        exec(compile(source, "ai_code.py", "exec"), namespace)
+    except BaseException as e:
+        result["error"] = "The code crashed while loading: " + type(e).__name__ + ": " + str(e)
+        finish()
+
+    func = namespace.get(function_name)
+    if not callable(func):
+        result["error"] = "No function named '" + function_name + "' in the AI's code"
+        finish()
+
+    for args, expected in cases:
+        try:
+            actual = func(*copy.deepcopy(args))
+            if actual == expected:
+                result["passed"] += 1
+        except BaseException as e:
+            if result["error"] is None:
+                result["error"] = ("Crashed on input " + repr(args) + ": "
+                                   + type(e).__name__ + ": " + str(e))
+    finish()
+
+main()
+"""
+
+# Only these environment variables reach the AI's code (no API keys)
+SAFE_ENV_VARS = ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "HOME", "USERPROFILE", "LANG")
 
 
 # ---------------------------------------------------------------
@@ -151,10 +205,13 @@ def grade(code_text, test_file):
         with open(runner_path, "w", encoding="utf-8") as f:
             f.write(RUNNER_CODE)
 
-        env = dict(os.environ, PYTHONIOENCODING="utf-8")
+        env = {name: os.environ[name] for name in SAFE_ENV_VARS if name in os.environ}
+        secret = secrets.token_hex(16)
         try:
             finished = subprocess.run(
-                [sys.executable, runner_path, os.path.abspath(test_file), solution_path],
+                # -I: isolated mode (ignores PYTHON* settings and user packages), -X utf8: UTF-8 output
+                [sys.executable, "-I", "-X", "utf8", runner_path, os.path.abspath(test_file), solution_path],
+                input=secret + "\n",
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -167,9 +224,10 @@ def grade(code_text, test_file):
             return 0, total, f"Timed out after {TIMEOUT_SECONDS} seconds (maybe an infinite loop)"
 
     # Look for the result line the helper script printed
+    tag = RESULT_MARKER + secret
     for line in reversed(finished.stdout.splitlines()):
-        if line.startswith(RESULT_MARKER):
-            data = json.loads(line[len(RESULT_MARKER):])
+        if line.startswith(tag):
+            data = json.loads(line[len(tag):])
             return data["passed"], data["total"], data["error"]
 
     # No result line: the process died in some unexpected way

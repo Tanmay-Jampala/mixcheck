@@ -1,27 +1,27 @@
-Below is a compact, well‑documented implementation of the requested **`indian_format`** function.
+Here’s a compact, pure‑Python implementation that follows the Indian numbering‑system comma placement:
 
 ```python
-def indian_format(num):
+def indian_format(num: int) -> str:
     """
-    Return the Indian‑style comma formatted representation of a non‑negative number.
+    Return the given non‑negative integer formatted with Indian‑style commas.
 
     Rules
     -----
     * The last three digits form the first group.
-    * All groups to the left of that are of size 2.
-    * Numbers < 1 000 are returned unchanged (no commas).
-    * If *num* is a float, the fractional part is left untouched.
+    * All groups to the left of that are two‑digit groups.
+    * Numbers smaller than 1 000 are returned unchanged (no commas).
 
     Parameters
     ----------
-    num : int | float | str
-        A non‑negative integer or floating‑point number.  A string containing a
-        numeric literal is also accepted.
+    num : int
+        A non‑negative integer.  ``ValueError`` is raised for negative values
+        or non‑integers.
 
     Returns
     -------
     str
-        The number formatted with Indian commas.
+        The number as a string with commas placed according to the Indian
+        convention.
 
     Examples
     --------
@@ -35,90 +35,57 @@ def indian_format(num):
     '12,345'
     >>> indian_format(1234567)
     '12,34,567'
-    >>> indian_format(12345678.90)
-    '1,23,45,678.90'
+    >>> indian_format(1234567890)
+    '1,23,45,67,890'
     """
-    # ------------------------------------------------------------------ #
-    # 1️⃣  Normalise the input – we only need the string representation.
-    # ------------------------------------------------------------------ #
-    if isinstance(num, (int, float)):
-        # Preserve the sign (should be non‑negative) and the decimal part.
-        s = f"{num}"
-    elif isinstance(num, str):
-        s = num.strip()
-    else:
-        raise TypeError("num must be int, float or numeric string")
+    # ---- validation ---------------------------------------------------------
+    if not isinstance(num, int):
+        raise TypeError("Only integer values are supported.")
+    if num < 0:
+        raise ValueError("Number must be non‑negative.")
 
-    # Guard against negative values (the spec says *non‑negative* only)
-    if s.startswith("-"):
-        raise ValueError("Only non‑negative numbers are allowed")
+    # ---- numbers < 1 000 need no commas ------------------------------------
+    if num < 1000:
+        return str(num)
 
-    # ------------------------------------------------------------------ #
-    # 2️⃣  Split integer and fractional parts (if any)
-    # ------------------------------------------------------------------ #
-    if "." in s:
-        int_part, frac_part = s.split(".", 1)
-        frac_part = "." + frac_part          # keep the dot for later
-    else:
-        int_part, frac_part = s, ""
+    # ---- work with the decimal representation as a list of characters -------
+    s = str(num)
+    # split off the last three digits (they always stay together)
+    last_three = s[-3:]
+    prefix = s[:-3]
 
-    # No commas needed for numbers with ≤3 digits
-    if len(int_part) <= 3:
-        return int_part + frac_part
+    # break the prefix into groups of two, starting from the right
+    groups = []
+    while len(prefix) > 2:
+        groups.append(prefix[-2:])   # take the right‑most two digits
+        prefix = prefix[:-2]        # shrink the prefix
+    # whatever is left (1 or 2 digits) becomes the left‑most group
+    if prefix:
+        groups.append(prefix)
 
-    # ------------------------------------------------------------------ #
-    # 3️⃣  Build the Indian grouping:
-    #     - last three digits stay together
-    #     - preceding digits are taken two‑by‑two from right to left
-    # ------------------------------------------------------------------ #
-    # a)   The right‑most three‑digit block
-    right_three = int_part[-3:]
-    # b)   The remaining left part
-    left = int_part[:-3]
+    # groups were collected from right to left → reverse them
+    groups = groups[::-1]
 
-    # c)   Group the left part in pairs
-    pairs = []
-    while left:
-        pairs.append(left[-2:])   # take last two digits
-        left = left[:-2]          # shrink the string
-
-    # d)   Assemble: pairs are in reverse order, so reverse them back
-    formatted_int = ",".join(reversed(pairs) + [right_three])
-
-    # ------------------------------------------------------------------ #
-    # 4️⃣  Append the fractional part (if any) and return
-    # ------------------------------------------------------------------ #
-    return formatted_int + frac_part
-
-
-# ---------------------------------------------------------------------- #
-# Simple sanity‑check (run only when the file is executed directly)
-# ---------------------------------------------------------------------- #
-if __name__ == "__main__":
-    test_vals = [
-        0, 5, 99, 100, 999,
-        1000, 1234, 12345, 123456,
-        1234567, 12345678, 123456789,
-        12345678.90, "9876543210.12345"
-    ]
-
-    for v in test_vals:
-        print(f"{v!r:>20} → {indian_format(v)}")
+    # join everything with commas
+    return ','.join(groups + [last_three])
 ```
 
 ### How it works
-1. **Input normalisation** – Accepts `int`, `float`, or a numeric string.  
-2. **Separate integer / fractional part** – The comma logic only touches the integer part; the fractional part (if any) is simply appended unchanged.  
-3. **Apply Indian grouping**  
-   * The last three digits are kept together.  
-   * The remaining digits are sliced into groups of two, starting from the right.  
-   * Those two‑digit groups are reversed back to the original order and joined with commas.  
-4. **Return** the formatted integer together with the original fractional part.
+1. **Validation** – ensures the input is a non‑negative integer.
+2. **Small numbers** – if the value is `< 1000` we simply return it unchanged.
+3. **String slicing** – the last three digits are kept together (`last_three`).
+4. **Two‑digit grouping** – the remaining left‑hand part (`prefix`) is sliced into
+   two‑digit chunks from right to left, stored in `groups`, then reversed to get
+   the correct order.
+5. **Join** – all groups (including the final three‑digit group) are concatenated
+   with commas.
 
-The function satisfies all the requirements you listed:
+You can drop this function into any script or module and call it directly:
 
-* **Non‑negative numbers only** – a `ValueError` is raised for negatives.  
-* **No commas for numbers `< 1 000`** – handled early.  
-* **Indian style grouping** – `…,12,34,567` etc.  
+```python
+print(indian_format(123456789))   # → 12,34,56,789
+print(indian_format(1000))        # → 1,000
+print(indian_format(999))         # → 999
+```
 
-Feel free to copy the function into your project and use it directly!
+Feel free to adapt it for floats (e.g., split on the decimal point first) if you need that extra functionality.

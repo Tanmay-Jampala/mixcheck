@@ -15,7 +15,7 @@ def reverse_string(s: str) -> str:
     str
         The reversed string.
     """
-    # Using Python's slicing syntax to reverse the string
+    # Using slicing to reverse the string
     return s[::-1]
 
 
@@ -29,6 +29,6 @@ if __name__ == "__main__":
 
 **Explanation**
 
-- `s[::-1]` is a slice that steps through the string with a step of `-1`, effectively iterating from the end to the start and producing a new reversed string.
+- `s[::-1]` is a Python slicing idiom that steps through the string `s` backwards, effectively reversing it.
 - The function includes type hints (`s: str -> str`) and a docstring for clarity.
-- The `if __name__ == "__main__":` block demonstrates how you can call the function and see the result.
+- The `if __name__ == "__main__":` block demonstrates how you might call the function and see the result.

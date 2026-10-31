@@ -16,20 +16,25 @@ def reverse_string(s: str) -> str:
     str
         The reversed string.
     """
-    # The simplest way in Python is to use slicing with a step of -1.
-    return s[::-1]
-
-
-# ---- Example usage ----
-if __name__ == "__main__":
-    original = "Hello, world!"
-    reversed_ = reverse_string(original)
-    print(f"Original: {original}")
-    print(f"Reversed: {reversed_}")
+    return s[::-1]          # slice notation: start:end:step (step = -1 reverses)
 ```
 
-### How it works
-- `s[::-1]` creates a new string that starts at the end of `s` and steps backwards one character at a time, effectively reversing the string.
-- The function is type‑annotated (`s: str` → `str`) so static type checkers and IDEs can help you catch mistakes.
+### Quick test
 
-Feel free to drop this into your project or tweak it if you need extra features (e.g., handling non‑string inputs, ignoring whitespace, etc.). Happy coding!
+```python
+if __name__ == "__main__":
+    examples = ["hello", "Python", "12345", ""]
+    for txt in examples:
+        print(f"{txt!r} -> {reverse_string(txt)!r}")
+```
+
+**Output**
+
+```
+'hello' -> 'olleh'
+'Python' -> 'nohtyP'
+'12345' -> '54321'
+'' -> ''
+```
+
+That’s all you need! The slice `s[::-1]` is the most idiomatic way in Python to reverse a string.
