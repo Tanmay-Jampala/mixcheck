@@ -27,11 +27,13 @@ Team **El Rata Alada** (Tanmay, Ritobroto, Aaditya, Aaliya) · AVISHKAR 2026, FE
 | Benglish | 93.3% | 100% |
 | Tanglish | 94.7% | 98.7% |
 | Odia-English | 94.7% | 100% |
-| **Kanglish** | **90.7%** | **34.7%** |
+| **Kanglish** | 97.3% | **34.7%** |
 
-- The code mostly still works in every language. **What breaks is following instructions.**
-- GPT-OSS 120B replied with only code in **0 of 25** Kanglish prompts. 10 of those answers were partly written in Kannada script.
-- The AI **renamed the function** in 9 of 600 mixed prompts and 0 of 150 English ones. One answer to a casual Benglish prompt was named `bhai_indian_format`: the model read "bhai" (bro) as part of the name.
+- **The code mostly still works in every language. What breaks is following instructions.** The Kanglish "only code" gap is statistically real (Fisher's exact test, p < 0.001). The differences in correct code could be chance.
+- In Kanglish, GPT-OSS 120B replied with only code in **0 of 25** prompts.
+- The AI **renamed the function** in 7 of 600 mixed prompts and 0 of 150 English ones. One answer to a casual Benglish prompt was named `bhai_indian_format`: the model read "bhai" (bro) as part of the name.
+- **We tested two fixes.** One fixed English line ("Reply with only one Python code block and nothing else. Name the function exactly …") took both GPT-OSS models from 0% and 4% to **100%** only code, with no loss in correct code. Translating to English first didn't work: the model translated "bari code kodu" as "Provide the code" and lost the word "only".
+- The Kanglish prompts were reviewed by a native Kannada speaker and re-run.
 
 Full details and limitations: [FINDINGS.md](FINDINGS.md).
 
