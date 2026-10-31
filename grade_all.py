@@ -102,3 +102,8 @@ for model in results["model"].unique():
         formatted = int(lang_rows["followed_format"].sum())
         print(f"  {language:<20} {fully_passed}/{count} correct ({100 * fully_passed / count:5.1f}%)"
               f"  |  {formatted}/{count} only code ({100 * formatted / count:5.1f}%)")
+
+# Refresh the database the dashboard reads (see db.py)
+import db  # noqa: E402
+db.build()
+print(f"Updated {db.DB_FILE}")

@@ -6,10 +6,30 @@
   <title>MixCheck · El Rata Alada · Avishkar 2026</title>
   <meta name="description" content="MixCheck tests whether AI coding assistants still write correct code when you ask in code-mixed Indian languages like Hinglish, Benglish and Kanglish.">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Kannada:wght@800&display=swap" rel="stylesheet">
+  <script>
+    // Lite mode for slow or metered connections: no 3D, no web fonts, no screenshots,
+    // and the dashboard loads only on request. Chosen before anything heavy starts loading.
+    (function () {
+      var FONTS = [
+        "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Unbounded:wght@500;700;800&display=swap",
+        "https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Kannada:wght@800&display=swap"
+      ];
+      var params = new URLSearchParams(location.search);
+      try { params = new URL(document.baseURI).searchParams; } catch (e) {}
+      var saved = null;
+      try { saved = localStorage.getItem("mixcheck-mode"); } catch (e) {}
+      var net = navigator.connection || {};
+      var slow = !!net.saveData || /(^|-)2g$|^3g$/.test(net.effectiveType || "");
+      var lite = params.has("lite") ? params.get("lite") !== "0" : saved ? saved === "lite" : slow;
+      window.MIXCHECK = { lite: lite, autoLite: lite && !saved && !params.has("lite"), fonts: FONTS };
+      if (lite) { document.documentElement.classList.add("lite"); return; }
+      FONTS.forEach(function (href) {
+        var link = document.createElement("link");
+        link.rel = "stylesheet"; link.href = href;
+        document.head.appendChild(link);
+      });
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -38,6 +58,8 @@
       <div class="hero-meta">
         <p class="slash">// Avishkar 2026</p>
         <p>Team El Rata Alada<br>AI &amp; IoT track</p>
+        <button class="mode-toggle" data-mode-toggle type="button">Slow connection? Use the lite version</button>
+        <p class="lite-note" data-lite-note hidden>Your connection looks slow, so this is the lite version.</p>
       </div>
 
       <aside class="hero-manifesto">
@@ -169,7 +191,7 @@
             <span class="jump-arrow" aria-hidden="true">→</span>
             <span class="jump-to">100%</span>
           </div>
-          <p>Both GPT-OSS models went from 0% to 100% "only code", with no loss in correctness.</p>
+          <p>"Reply with only one Python code block and nothing else." GPT-OSS 120B went from 0% to 100% "only code" and GPT-OSS 20B from 4%, with no loss in correct code.</p>
         </article>
 
         <article class="fix-card fix-bad">
@@ -180,6 +202,40 @@
             <p><span class="t-label">Translated</span><code class="struck">Provide the code</code></p>
           </div>
           <p>The translation dropped the "only", so the instruction disappeared before the model ever saw it.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- REAL CONDITIONS -->
+    <section id="real" class="panel panel-wide" data-glyph="braces" aria-labelledby="real-title">
+      <p class="slash">////// Built for real conditions</p>
+      <h2 id="real-title">Outages, slow networks, spoken prompts, and where the data comes from.</h2>
+
+      <div class="real-grid">
+        <article class="real-card">
+          <h3>If a data centre goes down</h3>
+          <p>Every AI request has a 30-second timeout and is retried up to 3 times with growing waits. Then it switches to a different company's data centre: Google and Groq back each other up.</p>
+          <p>A provider that just failed is skipped for a minute, so the next person doesn't wait too. A live test says when a backup answered; our recorded results never use one.</p>
+          <p class="real-spec">The 750 recorded results come from our own database, so they keep working even when every AI provider is down.</p>
+        </article>
+
+        <article class="real-card">
+          <h3>On a slow phone connection</h3>
+          <p>On 2G, 3G or Data Saver, the site switches itself to a lite version: no 3D, no web fonts, no screenshots, and the dashboard loads only when you ask. You can switch any time from the top of the page.</p>
+          <p class="real-spec">Lite: about 60 KB for the whole page. The full version adds about 0.9 MB of 3D and screenshots, and the live dashboard is about 11 MB, so lite loads it only when asked.</p>
+        </article>
+
+        <article class="real-card">
+          <h3>Ask out loud</h3>
+          <p>Speak a coding request in Hinglish, Benglish, Kanglish, Tanglish or Odia-English. Gemini writes down exactly what you said, in the letters people type in chats; Whisper on Groq is the backup.</p>
+          <p class="real-spec">MixCheck warns when the word for "only" gets lost on the way to text: the same failure we found with translate-first.</p>
+        </article>
+
+        <article class="real-card">
+          <h3>Where the data comes from</h3>
+          <p>We don't train any model. MixCheck tests existing ones: Gemini Flash-Lite from Google, and GPT-OSS 120B and 20B run by Groq.</p>
+          <p>25 tasks, each asked 10 ways. Prompts were drafted with AI help and checked by native speakers (Kanglish by Takshak P; Tanglish and Odia checks are in progress). Every test file is checked against a reference solution.</p>
+          <p class="real-spec">One SQLite database holds the 25 tasks, 250 prompts, 750 answers and grades, the fix experiment, and a log of every live test. Download it from the dashboard.</p>
         </article>
       </div>
     </section>
@@ -220,8 +276,12 @@
           <a class="live-full" data-dashboard-link href="https://mixcheck-elrata.streamlit.app/dashboard" target="_blank" rel="noopener">Full screen ↗</a>
         </div>
         <div class="live-frame">
-          <iframe data-dashboard title="MixCheck live dashboard" loading="lazy" allow="clipboard-write"></iframe>
+          <iframe data-dashboard title="MixCheck live dashboard" loading="lazy" allow="clipboard-write; microphone"></iframe>
           <p class="live-wait" aria-hidden="true">Waking the dashboard up…</p>
+          <div class="live-load" data-load-dashboard-box hidden>
+            <p>The lite version doesn't load the dashboard on its own: it needs a steady connection.</p>
+            <button class="btn-hud" data-load-dashboard type="button"><span>Load the live dashboard</span><span aria-hidden="true">↓</span></button>
+          </div>
         </div>
       </div>
     </section>
@@ -232,11 +292,13 @@
       <h2 id="tech-title">Small stack, strict grader.</h2>
       <ul class="stack">
         <li>Python</li><li>pandas</li><li>Gemini API</li><li>Groq API</li>
-        <li>Streamlit</li><li>Plotly</li><li>Custom HTML/JS widgets</li>
+        <li>Streamlit</li><li>Plotly</li><li>SQLite</li><li>Whisper</li><li>Three.js</li><li>Custom HTML/JS widgets</li>
       </ul>
       <dl class="specs">
         <div><dt>Grader</dt><dd>5-layer sandbox</dd></div>
-        <div><dt>Tests</dt><dd>48 automated</dd></div>
+        <div><dt>Database</dt><dd>SQLite, 7 tables</dd></div>
+        <div><dt>Failover</dt><dd>Timeouts, retries, Google ↔ Groq</dd></div>
+        <div><dt>Tests</dt><dd>76 automated</dd></div>
         <div><dt>Hosting</dt><dd>Streamlit Community Cloud</dd></div>
       </dl>
       <a class="btn-hud" href="https://github.com/Tanmay-Jampala/mixcheck" target="_blank" rel="noopener">
@@ -277,9 +339,9 @@
     </div>
     <p>AVISHKAR 2026 · FET, Jain University · AI &amp; IoT track</p>
     <p class="muted">Problem statement: “Cross-lingual code-switching robustness tester”</p>
+    <p><button class="mode-toggle" data-mode-toggle type="button">Slow connection? Use the lite version</button></p>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

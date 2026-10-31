@@ -19,14 +19,13 @@ import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
 
+import db
 import stats
 import ui
 import widgets
 from grade import extract_code, followed_format, grade, strip_fences
 from mixtag import build_english_vocab, mix_level, tag_words
 
-RESULTS_FILE = "results/results.csv"
-TASKS_FILE = "prompts/tasks.csv"
 
 VERSIONS = {
     "english": "English",
@@ -58,29 +57,28 @@ ui.inject_styles()
 # ---------------------------------------------------------------
 # Data
 # ---------------------------------------------------------------
+# Everything comes from mixcheck.db (see db.py), built from the repo's files on first start.
+@st.cache_resource
+def database():
+    return db.ensure()
+
+
 @st.cache_data
 def load_results():
-    df = pd.read_csv(RESULTS_FILE, keep_default_na=False)
-    df["passed_all"] = df["passed_all"].astype(str).str.lower() == "true"
-    if "followed_format" in df.columns:
-        df["followed_format"] = df["followed_format"].astype(str).str.lower() == "true"
-    else:
-        df["followed_format"] = True   # older results files don't have this column
-    return df
+    database()
+    return db.results_frame()
 
 
 @st.cache_data
 def load_tasks():
-    return pd.read_csv(TASKS_FILE, dtype=str, keep_default_na=False, encoding="utf-8-sig")
+    database()
+    return db.tasks_frame()
 
 
+@st.cache_data
 def read_reply(model, task_id, version):
     """The AI's full reply, exactly as it came back."""
-    path = os.path.join("generated", model, f"{task_id}_{version}.py")
-    if not os.path.exists(path):
-        return ""
-    with open(path, encoding="utf-8") as f:
-        return f.read()
+    return db.reply(model, task_id, version)
 
 
 def read_code(model, task_id, version):
@@ -90,12 +88,9 @@ def read_code(model, task_id, version):
     return extract_code(reply, row["function_name"] if row is not None else None) if reply else ""
 
 
+@st.cache_data
 def exact_model_id(model):
-    path = os.path.join("generated", model, "model_id.txt")
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            return f.read().strip()
-    return ""
+    return db.model_id(model)
 
 
 def title_of(function_name):
@@ -322,12 +317,9 @@ with tab_results:
     st.caption(f"We made {n_tests} comparisons, so a stricter cut-off (Bonferroni) is p < {strict:.4f}. "
                + (f"Still real at that cut-off: {', '.join(survivors)}." if survivors else "No gap passes that stricter cut-off."))
 
-    # ---- Can it be fixed? (results/fixes.csv, made by fix_experiment.py) ----
-    FIXES_FILE = "results/fixes.csv"
-    if os.path.exists(FIXES_FILE):
-        fixes = pd.read_csv(FIXES_FILE, keep_default_na=False)
-        for col in ("passed_all", "followed_format"):
-            fixes[col] = fixes[col].astype(str).str.lower() == "true"
+    # ---- Can it be fixed? (the fixes table, made by fix_experiment.py) ----
+    fixes = db.fixes_frame()
+    if not fixes.empty:
         ui.section("Can it be fixed?",
                    "We tried two simple fixes a coding tool could apply on the Kanglish prompts. "
                    "Guard: add one fixed English line, \u201cReply with only one Python code block and nothing else. "
@@ -377,11 +369,14 @@ with tab_results:
 
     # ---- Downloads ----
     ui.section("Take the results with you", "The raw results table, and a short report a team could share.")
-    d1, d2 = st.columns(2)
-    with open(RESULTS_FILE, "rb") as fh:
-        d1.download_button("Download results (CSV)", fh.read(), file_name="mixcheck_results.csv", mime="text/csv")
+    d1, d2, d3 = st.columns(3)
+    d1.download_button("Download results (CSV)", results.to_csv(index=False).encode("utf-8"),
+                       file_name="mixcheck_results.csv", mime="text/csv")
     d2.download_button("Download report (Markdown)", make_report(results, code_rows, fmt_rows, board),
                        file_name="mixcheck_report.md", mime="text/markdown")
+    with open(database(), "rb") as fh:
+        d3.download_button("Download the database (SQLite)", fh.read(), file_name="mixcheck.db",
+                           mime="application/vnd.sqlite3")
 
 # ---------------------------------------------------------------
 # Guess the verdict
@@ -450,22 +445,53 @@ with tab_failures:
 # ---------------------------------------------------------------
 # Try it live
 # ---------------------------------------------------------------
-def run_one(model, prompt, task_id):
-    """Ask the model and grade the answer.
-    Returns (passed, total, error, code, followed_format) or raises."""
-    from models import ask
+def run_one(model, prompt, task_id, source="typed", transcriber=None):
+    """Ask the model (or its backup, if its provider is down), grade the answer and log the run.
+    Returns (passed, total, error, code, followed_format, model_that_answered).
+    Raises models.ModelUnavailable if no provider can answer."""
+    from models import ask_with_backup
     try:
-        reply = ask(model, prompt)
+        answer = ask_with_backup(model, prompt)
     except Exception as e:
-        if "tool_use_failed" in str(e):
-            return 0, 1, "The model tried to call a tool instead of writing code.", "", False
-        raise
-    ok, n, error = grade(reply, os.path.join("tests", f"{task_id}.py"))
-    return ok, n, error, strip_fences(reply), followed_format(reply)
+        if "tool_use_failed" not in str(e):
+            raise
+        result = (0, 1, "The model tried to call a tool instead of writing code.", "", False, model)
+    else:
+        ok, n, error = grade(answer.text, os.path.join("tests", f"{task_id}.py"))
+        result = (ok, n, error, strip_fences(answer.text), followed_format(answer.text), answer.model)
+    ok, n, error, _, fmt, used = result
+    db.log_live_run(source, model, prompt, task_id=task_id, model_used=used, transcriber=transcriber,
+                    passed_cases=ok, total_cases=n, followed_format=fmt, error=error)
+    return result
+
+
+def failover_note(asked, used):
+    if used != asked:
+        st.info(f"{MODELS.get(asked, asked)} couldn't be reached, so {MODELS.get(used, used)} answered instead "
+                "(a different company's data centre). Our recorded results never use a backup model.")
+
+
+def model_down_message(e):
+    st.error("No AI provider can be reached right now: " + "; ".join(
+        f"{MODELS.get(m, m)}: {type(err).__name__}" for m, err in getattr(e, "tried", [])) + ".")
+    st.caption("The recorded results in the other tabs come from our database and keep working offline.")
+
+
+# Words that carry the "only code" instruction, in the languages we test
+ONLY_WORDS = ("only", "just", "sirf", "bas", "keval", "bari", "shudhu", "sudhu", "mattum", "kebala")
+VOICE_LANGUAGES = {"hinglish": "hinglish_casual", "benglish": "benglish_casual", "kanglish": "kanglish_casual",
+                   "tanglish": "tanglish_casual", "odia": "odia_casual"}
+
+
+def has_only_word(text):
+    words = {w.strip(".,!?;:\"'()").lower() for w in text.split()}
+    return any(w in words for w in ONLY_WORDS)
 
 
 with tab_live:
-    mode = st.radio("Mode", ["Face-off: English vs mixed", "Test one prompt"], horizontal=True,
+    from models import ModelUnavailable, transcribe
+
+    mode = st.radio("Mode", ["Face-off: English vs mixed", "Test one prompt", "Speak a prompt"], horizontal=True,
                     label_visibility="collapsed")
     task_labels = {tid: title_of(r["function_name"]) for tid, r in task_rows.items()}
 
@@ -498,14 +524,21 @@ with tab_live:
                         b = run_one(model, p_right, task_id)
                     for col, res in ((left, a), (right, b)):
                         with col:
+                            failover_note(model, res[5])
                             ui.verdict(res[0], res[1], res[2], res[4])
                             if res[3]:
                                 st.code(res[3], language="python")
+                    if a[5] != b[5]:
+                        st.warning("The two sides were answered by different models, so this isn't a fair comparison. "
+                                   "Run it again in a minute.")
                     ui.faceoff_summary(VERSIONS[english_key], a[0] == a[1], VERSIONS[mixed], b[0] == b[1], a[4], b[4])
+                except ModelUnavailable as e:
+                    model_down_message(e)
                 except Exception as e:
                     st.error(f"Couldn't reach the model: {type(e).__name__}: {str(e)[:200]}")
                     st.caption("Check the internet connection and the API keys in .env.")
-    else:
+
+    elif mode == "Test one prompt":
         ui.section("Test any prompt yourself", "Pick a task, rewrite the prompt however you like, and see if the code passes.")
         version_options = [v for v in VERSIONS if v in tasks.columns]
         c1, c2, c3 = st.columns(3)
@@ -522,13 +555,72 @@ with tab_live:
                 ui.bubble("You asked", prompt)
                 try:
                     with st.spinner("Asking the AI and running the tests..."):
-                        ok, n, error, code, fmt = run_one(model, prompt, task_id)
+                        ok, n, error, code, fmt, used = run_one(model, prompt, task_id)
+                    failover_note(model, used)
                     ui.verdict(ok, n, error, fmt)
                     if code:
                         st.code(code, language="python")
+                except ModelUnavailable as e:
+                    model_down_message(e)
                 except Exception as e:
                     st.error(f"Couldn't reach the model: {type(e).__name__}: {str(e)[:200]}")
                     st.caption("Check the internet connection and the API keys in .env.")
+
+    else:
+        ui.section("Ask out loud, the way you'd talk",
+                   "Record a coding request in mixed speech. MixCheck writes down exactly what you said, "
+                   "checks that the “only code” instruction survived, then tests the AI's code.")
+        voice_options = [k for k, col in VOICE_LANGUAGES.items() if col in tasks.columns]
+        c1, c2, c3 = st.columns(3)
+        task_id = c1.selectbox("Task", list(task_labels), format_func=task_labels.get, key="voice_task")
+        language = c2.selectbox("Language you'll speak", voice_options,
+                                format_func=lambda k: VERSIONS.get(VOICE_LANGUAGES[k], k).replace(", casual", ""),
+                                index=voice_options.index("kanglish") if "kanglish" in voice_options else 0)
+        model = c3.selectbox("Model", list(MODELS), format_func=MODELS.get, key="voice_model",
+                             index=list(MODELS).index("groq") if "groq" in MODELS else 0)
+        row = task_rows[task_id]
+        fn = row["function_name"]
+        script = row[VOICE_LANGUAGES[language]]
+        ui.bubble("Read this out, or say it your own way (say the function name too)", script)
+
+        audio = st.audio_input("Record your prompt", key=f"voice_{task_id}_{language}")
+        if audio is not None:
+            audio_bytes = audio.getvalue()
+            cache_key = ("transcript", hash(audio_bytes), language, fn)
+            if cache_key not in st.session_state:
+                try:
+                    with st.spinner("Writing down what you said..."):
+                        st.session_state[cache_key] = transcribe(audio_bytes, audio.type or "audio/wav", language, fn)
+                except ModelUnavailable as e:
+                    model_down_message(e)
+                except Exception as e:
+                    st.error(f"Couldn't transcribe the recording: {type(e).__name__}: {str(e)[:200]}")
+            heard = st.session_state.get(cache_key)
+            if heard is not None:
+                st.caption(f"Transcribed by {'Gemini' if heard.service == 'gemini' else 'Whisper on Groq (backup)'}. "
+                           "Fix any word it misheard before testing.")
+                prompt = st.text_area("What MixCheck heard", heard.text, height=110, key=f"heard_{hash(audio_bytes)}")
+                if has_only_word(script) and not has_only_word(prompt):
+                    st.warning("The “only code” instruction didn't survive transcription. That's the same "
+                               "failure we found with translate-first: the AI will probably add extra text.")
+                elif has_only_word(prompt):
+                    st.success("The “only code” instruction survived transcription.")
+                if st.button("Ask the AI and test its code", key="voice_go"):
+                    if fn not in prompt:
+                        st.warning(f"The function name {fn} isn't in the transcript. Add it, so the tests can find the function.")
+                    else:
+                        try:
+                            with st.spinner("Asking the AI and running the tests..."):
+                                ok, n, error, code, fmt, used = run_one(model, prompt, task_id, source="voice",
+                                                                        transcriber=heard.service)
+                            failover_note(model, used)
+                            ui.verdict(ok, n, error, fmt)
+                            if code:
+                                st.code(code, language="python")
+                        except ModelUnavailable as e:
+                            model_down_message(e)
+                        except Exception as e:
+                            st.error(f"Couldn't reach the model: {type(e).__name__}: {str(e)[:200]}")
 
 # ---------------------------------------------------------------
 # How it works

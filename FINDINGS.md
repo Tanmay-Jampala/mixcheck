@@ -57,6 +57,6 @@ Same casual style, only the language changes (3 models × 25 tasks each):
 ## Caveats
 
 - The sample is small: 25 tasks and one run per prompt. The correctness gaps are signals only. The instruction gap is large and significant.
-- The Kanglish prompts are now native-reviewed, and the team wrote Hinglish and Benglish. Tanglish and Odia were drafted with AI help and still need a check by a native speaker (Tanmay speaks Tamil, Aaliya speaks Odia).
+- The Kanglish prompts are now native-reviewed, and the team wrote Hinglish and Benglish. Tanglish and Odia were drafted with AI help and still need a check by a native speaker (Tanmay speaks Tamil, Aalia speaks Odia).
 - Re-running the Kanglish prompts changed its correct-code score from 90.7% to 97.3%. Better wording mattered for correctness, but not for following "only code".
 - The "only code" check is strict on purpose: one sentence of explanation counts as a fail.

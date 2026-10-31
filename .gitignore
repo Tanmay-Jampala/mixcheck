@@ -239,3 +239,7 @@ Thumbs.db
 # Local model files (too large for GitHub)
 *.gguf
 *.bin
+
+# SQLite database: rebuilt from the files above by build_db.py
+mixcheck.db
+mixcheck.db.building

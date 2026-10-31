@@ -328,7 +328,7 @@ def pipeline(steps):
 def footer():
     _html("""
     <div class="mc-footer">
-      <span>MixCheck, built by <b>Team El Rata Alada</b>: Tanmay, Ritobroto, Aaditya and Aaliya</span>
+      <span>MixCheck, built by <b>Team El Rata Alada</b>: Tanmay, Ritobroto, Aaditya and Aalia</span>
       <span>AVISHKAR 2026, FET, Jain University</span>
     </div>
     """)

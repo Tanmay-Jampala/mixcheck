@@ -31,8 +31,14 @@
   const LIVE_APP = "https://mixcheck-elrata.streamlit.app/";
   const dashboardUrl = new URL("dashboard", inApp ? document.baseURI : LIVE_APP).href;
   const dashFrame = document.querySelector("[data-dashboard]");
-  if (dashFrame) dashFrame.src = dashboardUrl + "?embed=true&embed_options=dark_theme";
+  const dashLoadBox = document.querySelector("[data-load-dashboard-box]");
+  function loadDashboard() {
+    if (!dashFrame || dashFrame.getAttribute("src")) return;
+    dashFrame.src = dashboardUrl + "?embed=true&embed_options=dark_theme";
+    if (dashLoadBox) dashLoadBox.hidden = true;
+  }
   document.querySelectorAll("[data-dashboard-link]").forEach((a) => { a.href = dashboardUrl; });
+  document.querySelector("[data-load-dashboard]")?.addEventListener("click", loadDashboard);
 
   // A srcdoc page resolves "#id" against the parent app's URL, which would load the app
   // inside this frame. Scroll in place instead.
@@ -88,32 +94,86 @@
   }, { rootMargin: "-45% 0px -45% 0px" });
   sections.forEach((s) => sectionObs.observe(s));
 
-  /* ---------- three.js scene ---------- */
+  /* ---------- three.js scene (full version only) ---------- */
+  const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js";
+  const settings = window.MIXCHECK || { lite: false, fonts: [] };
   let scene = null;
-  if (window.THREE) {
-    try { scene = createScene(); } catch (err) { console.warn("WebGL unavailable", err); }
+  let lite = settings.lite;
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src; s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
   }
-  if (!scene) document.body.classList.add("no-webgl");
 
-  const fontsReady = document.fonts && document.fonts.load
-    ? Promise.all([
-        document.fonts.load('800 100px "Noto Sans Devanagari"', "क"),
-        document.fonts.load('800 100px "Noto Sans Bengali"', "ক"),
-        document.fonts.load('800 100px "Noto Sans Kannada"', "ಕ"),
-        document.fonts.load('700 100px "Unbounded"', "96%"),
-        document.fonts.load('600 100px "IBM Plex Mono"', "{}"),
-      ]).catch(() => {})
-    : Promise.resolve();
+  function loadFonts() {
+    settings.fonts.forEach((href) => {
+      if (document.querySelector(`link[href="${href}"]`)) return;
+      const link = document.createElement("link");
+      link.rel = "stylesheet"; link.href = href;
+      document.head.appendChild(link);
+    });
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    return Promise.all([
+      document.fonts.load('800 100px "Noto Sans Devanagari"', "क"),
+      document.fonts.load('800 100px "Noto Sans Bengali"', "ক"),
+      document.fonts.load('800 100px "Noto Sans Kannada"', "ಕ"),
+      document.fonts.load('700 100px "Unbounded"', "96%"),
+      document.fonts.load('600 100px "IBM Plex Mono"', "{}"),
+    ]).catch(() => {});
+  }
 
-  fontsReady.then(() => {
-    if (!scene) return;
-    scene.morphTo(LANGS[langIndex].glyph);
-    if (autoCycle) {
-      cycleTimer = setInterval(() => {
-        if (autoCycle && currentSection === "hero" && !document.hidden) setLang(langIndex + 1, false);
-      }, 3800);
+  function startCycle() {
+    clearInterval(cycleTimer);
+    if (!autoCycle) return;
+    cycleTimer = setInterval(() => {
+      if (autoCycle && !lite && currentSection === "hero" && !document.hidden) setLang(langIndex + 1, false);
+    }, 3800);
+  }
+
+  function startScene() {
+    if (scene) { scene.resume(); startCycle(); return; }
+    (window.THREE ? Promise.resolve() : loadScript(THREE_URL))
+      .then(() => { scene = createScene(); document.body.classList.remove("no-webgl"); })
+      .catch((err) => { console.warn("3D unavailable", err); document.body.classList.add("no-webgl"); })
+      .then(loadFonts)
+      .then(() => {
+        if (!scene || lite) return;
+        scene.setDeep(currentSection !== "hero");
+        scene.morphTo(currentSection === "hero" ? LANGS[langIndex].glyph : SECTION_GLYPHS[currentSection]);
+        startCycle();
+      });
+  }
+
+  /* ---------- lite mode ---------- */
+  const toggles = document.querySelectorAll("[data-mode-toggle]");
+  const liteNote = document.querySelector("[data-lite-note]");
+
+  function applyMode() {
+    document.documentElement.classList.toggle("lite", lite);
+    toggles.forEach((b) => {
+      b.textContent = lite ? "Switch to the full version (3D, about 1 MB)" : "Slow connection? Use the lite version";
+    });
+    if (lite) {
+      clearInterval(cycleTimer);
+      if (scene) scene.pause();
+      if (dashLoadBox && dashFrame && !dashFrame.getAttribute("src")) dashLoadBox.hidden = false;
+    } else {
+      startScene();
+      loadDashboard();
     }
-  });
+  }
+
+  toggles.forEach((b) => b.addEventListener("click", () => {
+    lite = !lite;
+    try { localStorage.setItem("mixcheck-mode", lite ? "lite" : "full"); } catch (e) {}
+    if (liteNote) liteNote.hidden = true;
+    applyMode();
+  }));
+  if (liteNote && settings.autoLite) liteNote.hidden = false;
+  applyMode();
 
   function createScene() {
     const THREE = window.THREE;
@@ -412,12 +472,17 @@
       renderer.render(world, camera);
     }
 
-    if (!reduceMotion) {
-      renderer.setAnimationLoop(render);
-    } else {
-      render();
+    function resume() {
+      if (!reduceMotion) {
+        clock.getDelta();   // don't count the paused time as one huge frame
+        renderer.setAnimationLoop(render);
+      } else {
+        render();
+      }
     }
+    function pause() { renderer.setAnimationLoop(null); }
+    resume();
 
-    return { morphTo, setDeep };
+    return { morphTo, setDeep, pause, resume };
   }
 })();

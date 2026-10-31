@@ -103,3 +103,9 @@ for model in MODELS:
     for fix in FIXES:
         f_ = fixes[(fixes["model"] == model) & (fixes["fix"] == fix)]
         print(f"  {fix:<11} {int(f_['passed_all'].sum())}/{len(f_)} correct  |  {int(f_['followed_format'].sum())}/{len(f_)} only code")
+
+
+# Refresh the database the dashboard reads (see db.py)
+import db  # noqa: E402
+db.build()
+print(f"Updated {db.DB_FILE}")

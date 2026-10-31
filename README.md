@@ -9,7 +9,7 @@ MixCheck tests AI coding assistants on prompts written the way many Indians actu
 1. **Correct code**: did the function pass every test?
 2. **Followed instructions**: every prompt says "reply with only the code". Did it?
 
-Team **El Rata Alada** (Tanmay, Ritobroto, Aaditya, Aaliya) · AVISHKAR 2026, FET, Jain University · AI & IoT track · Problem statement: Cross-lingual code-switching robustness tester.
+Team **El Rata Alada** (Tanmay, Ritobroto, Aaditya, Aalia) · AVISHKAR 2026, FET, Jain University · AI & IoT track · Problem statement: Cross-lingual code-switching robustness tester.
 
 ## What we tested
 
@@ -92,9 +92,18 @@ python -m pytest checks -q
 | `grade_all.py` | Grades every saved reply and writes `results/results.csv` |
 | `mixtag.py` | Tags each word of a prompt by language for the Mix Dial |
 | `app.py`, `home.py`, `website/`, `static/` | Entry point and the project website (the front page), which embeds the dashboard |
-| `dashboard.py`, `ui.py`, `widgets.py` | The Streamlit dashboard at `/dashboard`: Mix Dial, results grid, Guess the verdict game, every failure, and a live face-off |
-| `models.py` | Asks a model live, for the face-off |
+| `dashboard.py`, `ui.py`, `widgets.py` | The Streamlit dashboard at `/dashboard`: Mix Dial, results grid, Guess the verdict game, every failure, a live face-off, and spoken prompts |
+| `models.py` | Talks to the models: timeouts, retries, failover between Google and Groq, and voice transcription |
+| `db.py`, `build_db.py` | The SQLite database (`mixcheck.db`) the dashboard reads: tasks, prompts, answers, grades, fixes and live runs |
 | `deck/` | Presentation slides |
+
+## Built for real conditions
+
+- **If a data centre goes down.** Every live request has a 30-second timeout and up to 3 retries with growing, randomised waits. Then `ask_with_backup` switches to the other provider (Google ↔ Groq, different companies' data centres) and the dashboard says so. A provider that just failed is skipped for a minute (a circuit breaker). Benchmark scripts use `ask`, which never switches model, so every recorded result comes from the model it is labelled with. The recorded results are served from the database and work with no AI provider at all.
+- **Slow connections.** The website switches itself to a lite version on 2G, 3G or Data Saver (or with `?lite=1`): no 3D, no web fonts, no screenshots, and the dashboard loads only on request. Measured: about 60 KB for the page in lite, about 0.9 MB more in full, about 11 MB for the embedded dashboard. Streamlit's own app code is about 2.2 MB on the first visit in either version.
+- **Spoken prompts.** "Try it live" → "Speak a prompt": record a request in Hinglish, Benglish, Kanglish, Tanglish or Odia-English. Gemini transcribes it word for word in romanised script (Whisper on Groq is the backup), MixCheck warns if the word for "only" was lost, then grades the code.
+- **The database.** `mixcheck.db` (SQLite) holds 25 tasks, 250 prompts, 750 answers and grades, 100 fix-experiment answers and a log of every live run. It is rebuilt from the plain files in this repo (`python build_db.py`, or automatically by `grade_all.py`, `fix_experiment.py` and the dashboard), so the files stay easy to review in git. Download it from the dashboard's Results tab.
+- **No model is trained.** MixCheck tests existing models (Gemini Flash-Lite, GPT-OSS 120B and 20B); it only sends prompts and grades the answers.
 
 ## How the grader keeps untrusted code contained
 
