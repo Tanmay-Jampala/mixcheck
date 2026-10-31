@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MixCheck · El Rata Alada · Avishkar 2026</title>
+  <meta name="description" content="MixCheck tests whether AI coding assistants still write correct code when you ask in code-mixed Indian languages like Hinglish, Benglish and Kanglish.">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Kannada:wght@800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#problem">Skip to content</a>
+
+  <div class="fog" aria-hidden="true"></div>
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="MixCheck home">
+      <img src="assets/logo.svg" alt="" width="36" height="36">
+      <span class="wordmark">mixcheck</span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#results">Results</a>
+      <a href="#fix">Fix</a>
+      <a href="#team">Team</a>
+      <a class="nav-live" href="#dashboard">Dashboard</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero" data-glyph="hero" aria-labelledby="hero-title">
+      <div class="hero-meta">
+        <p class="slash">// Avishkar 2026</p>
+        <p>Team El Rata Alada<br>AI &amp; IoT track</p>
+      </div>
+
+      <aside class="hero-manifesto">
+        <p class="slash">////// The question</p>
+        <p>Indians ask AI for code the way they talk: half English, half something else. Nobody was checking whether the code still works.</p>
+      </aside>
+
+      <div class="hero-body">
+        <h1 id="hero-title">Same coding task. Different language. Does the AI still get it&nbsp;right?</h1>
+        <a class="btn-hud btn-primary btn-down" href="#live">
+          <span>Open the live dashboard</span><span aria-hidden="true">↓</span>
+        </a>
+      </div>
+
+      <div class="lang-dial" role="group" aria-label="Choose a language to visualise">
+        <button class="dial-arrow" data-step="-1" aria-label="Previous language">‹</button>
+        <ul class="dial-track">
+          <li><button data-lang="0" aria-pressed="false">English</button></li>
+          <li><button data-lang="1" aria-pressed="true">Hinglish</button></li>
+          <li><button data-lang="2" aria-pressed="false">Benglish</button></li>
+          <li><button data-lang="3" aria-pressed="false">Kanglish</button></li>
+        </ul>
+        <button class="dial-arrow" data-step="1" aria-label="Next language">›</button>
+        <p class="dial-caption" aria-live="polite">Hindi + English</p>
+      </div>
+
+      <p class="scroll-hint">Scroll down to<br>see the results.</p>
+    </section>
+
+    <!-- PROBLEM -->
+    <section id="problem" class="panel" data-glyph="question" aria-labelledby="problem-title">
+      <p class="slash">////// The problem</p>
+      <h2 id="problem-title">AI coding tools are graded in English. Most Indian developers don't only speak English.</h2>
+      <div class="fact-row">
+        <div class="fact">
+          <p class="fact-num">314.9M</p>
+          <p class="fact-label">bilingual Indians, Census&nbsp;2011</p>
+        </div>
+        <div class="fact">
+          <p class="fact-num">0<span class="of"> / 23</span></p>
+          <p class="fact-label">Indian languages in HumanEval-XL's 23</p>
+        </div>
+      </div>
+      <p class="lede">When a developer types <code>ek function likho</code> instead of "write a function", does the assistant still write working code? MixCheck asks the same question 750 times and checks every answer against real tests.</p>
+    </section>
+
+    <!-- HOW -->
+    <section id="how" class="panel" data-glyph="braces" aria-labelledby="how-title">
+      <p class="slash">////// How it works</p>
+      <h2 id="how-title">From one prompt to two scores.</h2>
+      <ol class="pipeline">
+        <li>
+          <span class="step">01</span>
+          <div><h3>Paired prompts</h3><p>25 coding tasks, each written 10 ways: plain English and its code-mixed versions.</p></div>
+        </li>
+        <li>
+          <span class="step">02</span>
+          <div><h3>Three models</h3><p>Every prompt goes to Gemini, GPT-OSS 120B and GPT-OSS 20B.</p></div>
+        </li>
+        <li>
+          <span class="step">03</span>
+          <div><h3>Find the function</h3><p>The grader pulls the function out of whatever the model replied with.</p></div>
+        </li>
+        <li>
+          <span class="step">04</span>
+          <div><h3>Run the tests</h3><p>It runs against real test cases inside a 5-layer sandbox.</p></div>
+        </li>
+        <li>
+          <span class="step">05</span>
+          <div><h3>Two scores</h3><p><strong>Correct code</strong>: did the tests pass? <strong>Only code</strong>: did it reply with just the code we asked for?</p></div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="results" class="panel panel-wide" data-glyph="96" aria-labelledby="results-title">
+      <p class="slash">////// Results</p>
+      <h2 id="results-title">The code mostly works. The instructions get lost.</h2>
+
+      <div class="stats">
+        <article class="stat">
+          <p class="stat-num">750</p>
+          <p class="stat-label">answers graded</p>
+          <p class="stat-note">25 tasks × 10 versions × 3 models</p>
+        </article>
+
+        <article class="stat">
+          <p class="stat-num">96%</p>
+          <p class="stat-label">correct code overall</p>
+          <p class="stat-note">Language barely moves whether the tests pass.</p>
+        </article>
+
+        <article class="stat stat-span">
+          <p class="stat-label">Replied with only code</p>
+          <div class="bars" role="img" aria-label="Kanglish 35 percent, casual English 100 percent">
+            <div class="bar-row">
+              <span class="bar-name">Casual English</span>
+              <span class="bar"><span class="bar-fill pass" style="--v:100%"></span></span>
+              <span class="bar-val">100%</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-name">Kanglish</span>
+              <span class="bar"><span class="bar-fill fail" style="--v:35%"></span></span>
+              <span class="bar-val">35%</span>
+            </div>
+          </div>
+          <p class="stat-note">p &lt; 0.001</p>
+        </article>
+
+        <article class="stat">
+          <p class="stat-num">7 <span class="vs">vs</span> 0</p>
+          <p class="stat-label">renamed functions, mixed vs English</p>
+          <p class="stat-note">Asked casually, the model got casual: <code>bhai_indian_format</code></p>
+        </article>
+      </div>
+    </section>
+
+    <!-- FIX -->
+    <section id="fix" class="panel panel-wide" data-glyph="check" aria-labelledby="fix-title">
+      <p class="slash">////// Can it be fixed?</p>
+      <h2 id="fix-title">One line of English fixed it. Translating everything made it worse.</h2>
+
+      <div class="fix-grid">
+        <article class="fix-card fix-good">
+          <p class="fix-tag">Worked</p>
+          <h3>Add one English guard line</h3>
+          <div class="jump">
+            <span class="jump-from">0%</span>
+            <span class="jump-arrow" aria-hidden="true">→</span>
+            <span class="jump-to">100%</span>
+          </div>
+          <p>Both GPT-OSS models went from 0% to 100% "only code", with no loss in correctness.</p>
+        </article>
+
+        <article class="fix-card fix-bad">
+          <p class="fix-tag">Failed</p>
+          <h3>Translate the prompt to English first</h3>
+          <div class="translate">
+            <p><span class="t-label">Kanglish</span><code>bari code kodu</code><span class="t-gloss">"just give the code"</span></p>
+            <p><span class="t-label">Translated</span><code class="struck">Provide the code</code></p>
+          </div>
+          <p>The translation dropped the "only", so the instruction disappeared before the model ever saw it.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="panel panel-wide" data-glyph="logo" aria-labelledby="dashboard-title">
+      <p class="slash">////// Live dashboard</p>
+      <h2 id="dashboard-title">Try it right here.</h2>
+
+      <div class="shots">
+        <figure class="shot">
+          <div class="shot-frame">
+            <img src="screens/mix-dial.jpg" alt="The Mix Dial set to Kanglish, casual: 61% of the prompt's words are not English, all three models pass, two ignore the only-code instruction" loading="lazy" onerror="this.closest('.shot-frame').classList.add('is-empty')">
+            <span class="shot-empty" aria-hidden="true">Mix Dial</span>
+          </div>
+          <figcaption><strong>Mix Dial</strong> Drag from English to Kanglish and watch the same prompt rewrite itself, and the models' lights change.</figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="shot-frame">
+            <img src="screens/heat-grid.jpg" alt="Heat grid: pass rates for Gemini, Groq big and Groq small across ten ways of asking" loading="lazy" onerror="this.closest('.shot-frame').classList.add('is-empty')">
+            <span class="shot-empty" aria-hidden="true">Heat grid</span>
+          </div>
+          <figcaption><strong>Heat grid</strong> Every model against every way of asking. Click a cell to read the answers behind it.</figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="shot-frame">
+            <img src="screens/guess-the-verdict.jpg" alt="Guess the verdict: a Hinglish prompt next to the code Groq small wrote, with It passes and It fails buttons" loading="lazy" onerror="this.closest('.shot-frame').classList.add('is-empty')">
+            <span class="shot-empty" aria-hidden="true">Guess the verdict</span>
+          </div>
+          <figcaption><strong>Guess the verdict</strong> Read a real prompt and the AI's code, call pass or fail, then see the tests.</figcaption>
+        </figure>
+      </div>
+
+      <div class="live" id="live">
+        <div class="live-bar">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>Live · the full MixCheck dashboard</span>
+          <a class="live-full" data-dashboard-link href="https://mixcheck-elrata.streamlit.app/dashboard" target="_blank" rel="noopener">Full screen ↗</a>
+        </div>
+        <div class="live-frame">
+          <iframe data-dashboard title="MixCheck live dashboard" loading="lazy" allow="clipboard-write"></iframe>
+          <p class="live-wait" aria-hidden="true">Waking the dashboard up…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TECH -->
+    <section id="tech" class="panel" data-glyph="braces" aria-labelledby="tech-title">
+      <p class="slash">////// Built with</p>
+      <h2 id="tech-title">Small stack, strict grader.</h2>
+      <ul class="stack">
+        <li>Python</li><li>pandas</li><li>Gemini API</li><li>Groq API</li>
+        <li>Streamlit</li><li>Plotly</li><li>Custom HTML/JS widgets</li>
+      </ul>
+      <dl class="specs">
+        <div><dt>Grader</dt><dd>5-layer sandbox</dd></div>
+        <div><dt>Tests</dt><dd>48 automated</dd></div>
+        <div><dt>Hosting</dt><dd>Streamlit Community Cloud</dd></div>
+      </dl>
+      <a class="btn-hud" href="https://github.com/Tanmay-Jampala/mixcheck" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+        <span>Tanmay-Jampala/mixcheck</span><span aria-hidden="true">↗</span>
+      </a>
+    </section>
+
+    <!-- TEAM -->
+    <section id="team" class="panel panel-wide" data-glyph="team" aria-labelledby="team-title">
+      <p class="slash">////// Team</p>
+      <h2 id="team-title">El Rata Alada</h2>
+      <ul class="team">
+        <li class="member" style="--hue:0">
+          <span class="avatar" aria-hidden="true">T</span>
+          <div><p class="m-name">Tanmay</p><p class="m-role">Team lead &amp; developer</p></div>
+        </li>
+        <li class="member" style="--hue:1">
+          <span class="avatar" aria-hidden="true">R</span>
+          <div><p class="m-name">Ritobroto</p><p class="m-role">Testing &amp; evaluation</p></div>
+        </li>
+        <li class="member" style="--hue:2">
+          <span class="avatar" aria-hidden="true">A</span>
+          <div><p class="m-name">Aaditya</p><p class="m-role">Dataset &amp; design</p></div>
+        </li>
+        <li class="member" style="--hue:3">
+          <span class="avatar" aria-hidden="true">A</span>
+          <div><p class="m-name">Aalia</p><p class="m-role">Research &amp; presentation</p></div>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-brand">
+      <img src="assets/logo.svg" alt="" width="28" height="28">
+      <span class="wordmark">mixcheck</span>
+    </div>
+    <p>AVISHKAR 2026 · FET, Jain University · AI &amp; IoT track</p>
+    <p class="muted">Problem statement: “Cross-lingual code-switching robustness tester”</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

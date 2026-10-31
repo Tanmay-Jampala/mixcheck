@@ -58,7 +58,7 @@ Then:
 
 ```bash
 python check_keys.py                  # checks both keys work
-streamlit run app.py                  # opens the dashboard at http://localhost:8501
+streamlit run app.py                  # website at http://localhost:8501, dashboard at /dashboard
 ```
 
 The saved answers and results are already in the repo, so the dashboard works without running the models again. To redo everything:
@@ -91,7 +91,8 @@ python -m pytest checks -q
 | `checks/` | Automated tests: the grader, the sandbox, the statistics, and a reference solution that must pass every test file |
 | `grade_all.py` | Grades every saved reply and writes `results/results.csv` |
 | `mixtag.py` | Tags each word of a prompt by language for the Mix Dial |
-| `app.py`, `ui.py`, `widgets.py` | The Streamlit dashboard: Mix Dial, results grid, Guess the verdict game, every failure, and a live face-off |
+| `app.py`, `home.py`, `website/`, `static/` | Entry point and the project website (the front page), which embeds the dashboard |
+| `dashboard.py`, `ui.py`, `widgets.py` | The Streamlit dashboard at `/dashboard`: Mix Dial, results grid, Guess the verdict game, every failure, and a live face-off |
 | `models.py` | Asks a model live, for the face-off |
 | `deck/` | Presentation slides |
 

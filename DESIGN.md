@@ -41,7 +41,7 @@ A live test bench that makes code-mixing *visible*. The one bold element is the 
 
 ## Rules
 
-1. Colours only come from `TOKENS`. No new hex codes in `app.py`.
+1. Colours only come from `TOKENS`. No new hex codes in `dashboard.py`.
 2. Pass and fail colours never appear without the words "Passed" or "Failed".
 3. No all-caps labels, and no "01 / 02" numbering unless the content really is a sequence.
 4. HTML in Streamlit always goes through `ui._html()`, which strips indentation and blank lines so it renders properly.
