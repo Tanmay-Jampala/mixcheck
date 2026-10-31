@@ -250,31 +250,42 @@ def bubble(label, text):
     _html(f'<div class="mc-bubble-label">{esc(label)}</div><div class="mc-bubble">{esc(text)}</div>')
 
 
-def verdict(passed, total, error=None):
+def verdict(passed, total, error=None, followed=None):
     ok = total > 0 and passed == total
     kind = "pass" if ok else "fail"
     colour = T["pass"] if ok else T["fail"]
     width = 0 if total == 0 else 100 * passed / total
     why = f'<div class="mc-why"><b>What went wrong:</b> {esc(error)}</div>' if error else ""
+    fmt = ""
+    if followed is True:
+        fmt = f'<div class="mc-why" style="color:{T["pass"]}"><b>Instructions:</b> replied with only the code, as asked</div>'
+    elif followed is False:
+        fmt = f'<div class="mc-why" style="color:{T["accent"]}"><b>Instructions:</b> ignored “only code” and added extra text</div>'
     _html(f"""
     <div class="mc-verdict {kind}">
       <div class="big">{"Passed" if ok else "Failed"}</div>
       <div class="mc-why">{passed} of {total} test cases passed</div>
       <div class="mc-meter"><div style="width:{width:.0f}%; background:{colour}"></div></div>
+      {fmt}
       {why}
     </div>
     """)
 
 
-def faceoff_summary(left_label, left_ok, right_label, right_ok):
-    if left_ok and right_ok:
-        title, note = "Both passed.", "The AI understood the task in both languages."
+def faceoff_summary(left_label, left_ok, right_label, right_ok, left_fmt=None, right_fmt=None):
+    if left_ok and right_ok and left_fmt and right_fmt is False:
+        title = f"Both wrote working code, but the {right_label} answer ignored “only code”."
+        note = "This is our main finding: in mixed languages the code mostly still works, but the instructions break."
+    elif left_ok and right_ok:
+        title, note = "Both passed.", ("The AI handled the task in both languages this time. Most tasks pass: "
+                                       "the gaps show up across 750 answers, not in every single run.")
     elif left_ok and not right_ok:
         title = f"{left_label} passed. {right_label} failed."
         note = "Same task, different language, different result: this is exactly the gap MixCheck measures."
     elif right_ok and not left_ok:
         title = f"{right_label} passed. {left_label} failed."
-        note = "The mixed prompt did better this time. Every run counts, which is why we test many tasks."
+        note = ("The mixed prompt did better this time. One live run can go either way, "
+                "which is why our results come from 750 graded answers, not one.")
     else:
         title, note = "Both failed.", "The task itself tripped the AI up, whatever the language."
     _html(f'<div class="mc-faceoff"><div class="t">{esc(title)}</div><p>{esc(note)}</p></div>')

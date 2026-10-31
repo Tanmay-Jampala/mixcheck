@@ -21,7 +21,7 @@ import streamlit.components.v1 as components
 
 import ui
 import widgets
-from grade import extract_code, grade, strip_fences
+from grade import extract_code, followed_format, grade, strip_fences
 from mixtag import build_english_vocab, mix_level, tag_words
 
 RESULTS_FILE = "results/results.csv"
@@ -265,9 +265,11 @@ with tab_game:
                      "why": r.error or f"It ran without crashing, but gave the wrong answer on "
                                        f"{int(r.total_cases - r.passed_cases)} of {int(r.total_cases)} test cases."})
     # Mix in passing answers, preferring casual and mixed prompts
-    passes = results[results["passed_all"] & results["language"].str.contains("casual|devanagari")]
     rng = random.Random(7)
-    picks = passes.sample(n=min(len(passes), max(4, 10 - len(deck))), random_state=7) if len(passes) else passes
+    rng.shuffle(deck)
+    deck = deck[:6]                      # 6 failures + 4 passes, so guessing "fails" every time doesn't win
+    passes = results[results["passed_all"] & results["language"].str.contains("casual|devanagari")]
+    picks = passes.sample(n=min(len(passes), 10 - len(deck)), random_state=7) if len(passes) else passes
     for r in picks.itertuples():
         code = read_code(r.model, r.task_id, r.language)
         if not code:
@@ -312,16 +314,17 @@ with tab_failures:
 # Try it live
 # ---------------------------------------------------------------
 def run_one(model, prompt, task_id):
-    """Ask the model and grade the answer. Returns (passed, total, error, code) or raises."""
+    """Ask the model and grade the answer.
+    Returns (passed, total, error, code, followed_format) or raises."""
     from models import ask
     try:
         reply = ask(model, prompt)
     except Exception as e:
         if "tool_use_failed" in str(e):
-            return 0, 1, "The model tried to call a tool instead of writing code.", ""
+            return 0, 1, "The model tried to call a tool instead of writing code.", "", False
         raise
     ok, n, error = grade(reply, os.path.join("tests", f"{task_id}.py"))
-    return ok, n, error, strip_fences(reply)
+    return ok, n, error, strip_fences(reply), followed_format(reply)
 
 
 with tab_live:
@@ -334,11 +337,11 @@ with tab_live:
                    "The same task in two languages, sent to the same model. Does the language change the result?")
         mixed_options = [v for v in VERSIONS if v in tasks.columns and not v.startswith("english")]
         c1, c2, c3 = st.columns(3)
-        start_task = list(task_labels)[dial_data(len(results))["start_task"]]
+        start_task = "task16" if "task16" in task_labels else list(task_labels)[dial_data(len(results))["start_task"]]
         task_id = c1.selectbox("Task", list(task_labels), format_func=task_labels.get, key="fo_task",
                                index=list(task_labels).index(start_task))
         mixed = c2.selectbox("Mixed version", mixed_options, format_func=VERSIONS.get,
-                             index=mixed_options.index("benglish_casual") if "benglish_casual" in mixed_options else 0)
+                             index=mixed_options.index("kanglish_casual") if "kanglish_casual" in mixed_options else 0)
         model = c3.selectbox("Model", list(MODELS), format_func=MODELS.get, key="fo_model",
                              index=list(MODELS).index("groq") if "groq" in MODELS else 0)
         english_key = "english_casual" if mixed.endswith("casual") and "english_casual" in tasks.columns else "english"
@@ -358,10 +361,10 @@ with tab_live:
                         b = run_one(model, p_right, task_id)
                     for col, res in ((left, a), (right, b)):
                         with col:
-                            ui.verdict(res[0], res[1], res[2])
+                            ui.verdict(res[0], res[1], res[2], res[4])
                             if res[3]:
                                 st.code(res[3], language="python")
-                    ui.faceoff_summary(VERSIONS[english_key], a[0] == a[1], VERSIONS[mixed], b[0] == b[1])
+                    ui.faceoff_summary(VERSIONS[english_key], a[0] == a[1], VERSIONS[mixed], b[0] == b[1], a[4], b[4])
                 except Exception as e:
                     st.error(f"Couldn't reach the model: {type(e).__name__}: {str(e)[:200]}")
                     st.caption("Check the internet connection and the API keys in .env.")
@@ -382,8 +385,8 @@ with tab_live:
                 ui.bubble("You asked", prompt)
                 try:
                     with st.spinner("Asking the AI and running the tests..."):
-                        ok, n, error, code = run_one(model, prompt, task_id)
-                    ui.verdict(ok, n, error)
+                        ok, n, error, code, fmt = run_one(model, prompt, task_id)
+                    ui.verdict(ok, n, error, fmt)
                     if code:
                         st.code(code, language="python")
                 except Exception as e:
